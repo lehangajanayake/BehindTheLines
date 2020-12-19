@@ -9,6 +9,7 @@ type Player struct{
 	FacingFront bool
 	Op *ebiten.DrawImageOptions
 	WalkingAnimation Animation
+	IdleAnimation Animation
 }
 
 //Coordinates contains the x and y value
