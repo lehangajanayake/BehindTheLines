@@ -1,15 +1,13 @@
 package main
 
 import (
+	"errors"
 	"image"
 	_ "image/png"
 	"log"
-	"os"
 	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	//"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	//"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/lehangajanayake/MissionImposible/frontend/models"
 )
@@ -25,6 +23,13 @@ func (g *Game) Update()error{
 	g.Player.WalkingAnimation.Animate = false
 	g.Player.IdleAnimation.Animate = false
 	g.Player.ShootingAnimation.Animate = false
+	
+	if !g.Player.ShootingAnimation.Done{
+		g.Player.ShootingAnimation.CurrentFrame ++
+		g.Player.ShootingAnimation.Animate = true
+		return nil
+	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyW){
 		g.Player.WalkingAnimation.Animate = true
 		g.Player.WalkingAnimation.CurrentFrame ++
@@ -34,27 +39,33 @@ func (g *Game) Update()error{
 		g.Player.WalkingAnimation.CurrentFrame ++
 		g.Player.Coords.Y ++ 
 		
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyD){
+		g.Player.WalkingAnimation.Animate = true
+		g.Player.WalkingAnimation.CurrentFrame ++
+		g.Player.Coords.X ++
+		g.Player.FacingFront = true
 	}else if ebiten.IsKeyPressed(ebiten.KeyA){
 		g.Player.WalkingAnimation.Animate = true
 		g.Player.WalkingAnimation.CurrentFrame ++
 		g.Player.Coords.X --
-		g.Player.FacingFront = false
-	}else if ebiten.IsKeyPressed(ebiten.KeyD){
-		g.Player.WalkingAnimation.Animate = true
-		g.Player.WalkingAnimation.CurrentFrame ++
-		g.Player.Coords.X ++
-		g.Player.FacingFront = true	
+		g.Player.FacingFront = false	
 	
 	}
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
 		g.Player.ShootingAnimation.Animate = true
+		g.Player.ShootingAnimation.Done = false
 		g.Player.ShootingAnimation.CurrentFrame ++
 	}
 
 	if !g.Player.WalkingAnimation.Animate && !g.Player.ShootingAnimation.Animate{
 		g.Player.IdleAnimation.CurrentFrame ++
 		g.Player.IdleAnimation.Animate = true
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyQ){
+		return errors.New("Game Exited by the user")
 	}
 
 	return nil
@@ -71,21 +82,22 @@ func (g *Game) Draw(screen *ebiten.Image){
 	g.Player.Op.GeoM.Translate(float64(g.Player.Coords.X),float64(g.Player.Coords.Y))
 	
 	if g.Player.WalkingAnimation.Animate {
-		f := (g.Player.WalkingAnimation.CurrentFrame / 20 ) % g.Player.WalkingAnimation.FrameNum
+		f := (g.Player.WalkingAnimation.CurrentFrame / 10 ) % g.Player.WalkingAnimation.FrameNum
 		x, y := g.Player.WalkingAnimation.FrameWidth*f, g.Player.WalkingAnimation.StartY
 		screen.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image), g.Player.Op)
-		g.Player.WalkingAnimation.CurrentFrame ++
 	}else if g.Player.IdleAnimation.Animate{
 		f := (g.Player.IdleAnimation.CurrentFrame / 20) % g.Player.IdleAnimation.FrameNum
 		x, y := g.Player.IdleAnimation.FrameWidth*f, g.Player.IdleAnimation.StartY
 		screen.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.IdleAnimation.FrameWidth, y + g.Player.IdleAnimation.FrameHeight)).(*ebiten.Image), g.Player.Op)
-		g.Player.IdleAnimation.CurrentFrame ++
 		
 	}else if g.Player.ShootingAnimation.Animate{
-		f := (g.Player.ShootingAnimation.CurrentFrame / 10) % g.Player.ShootingAnimation.FrameNum
+		f := (g.Player.ShootingAnimation.CurrentFrame / 5) % g.Player.ShootingAnimation.FrameNum
 		x, y := g.Player.ShootingAnimation.FrameWidth*f, g.Player.ShootingAnimation.StartY
 		screen.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.ShootingAnimation.FrameWidth, y + g.Player.ShootingAnimation.FrameHeight)).(*ebiten.Image), g.Player.Op)
-		g.Player.ShootingAnimation.CurrentFrame ++
+		if g.Player.ShootingAnimation.CurrentFrame == g.Player.ShootingAnimation.FrameNum*5{
+			g.Player.ShootingAnimation.Done = true
+			g.Player.ShootingAnimation.CurrentFrame = 1
+		}
 	}	
 	ebitenutil.DebugPrint(screen, strconv.Itoa(int(ebiten.CurrentFPS())))
 }
@@ -136,7 +148,7 @@ func main(){
 				FrameHeight: 80,
 				FrameWidth: 80,
 				Animate: false,
-
+				Done: true,
 			},
 			FacingFront: true,
 		},
@@ -145,11 +157,5 @@ func main(){
 	if err := ebiten.RunGame(&g); err != nil{
 		log.Fatal(err)
 	}
-	go func ()  {
-		for{
-			if ebiten.IsKeyPressed(ebiten.KeyQ){
-				os.Exit(0)
-			}
-		}
-	}()
+	
 }
