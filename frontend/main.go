@@ -5,7 +5,6 @@ import (
 	_ "image/png"
 	"log"
 	"strconv"
-	"sync/atomic"
 
 	//"math"
 
