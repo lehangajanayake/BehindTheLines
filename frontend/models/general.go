@@ -7,6 +7,11 @@ type Coordinates struct{
 
 //Animation model for animation
 type Animation struct{
-	Animate, Done bool
+	Animate bool
 	FrameNum, CurrentFrame, FrameHeight, FrameWidth, StartX, StartY int
+}
+
+//Reset the animation
+func (a *Animation)Reset(){
+	a.Animate = false
 }

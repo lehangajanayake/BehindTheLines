@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	_ "image/png"
 	"log"
-	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -20,48 +20,34 @@ type Game struct{
 
 //Update updates  the game 
 func (g *Game) Update()error{
-	g.Player.WalkingAnimation.Animate = false
-	g.Player.IdleAnimation.Animate = false
-	g.Player.ShootingAnimation.Animate = false
+	g.Player.IdleAnimation.Reset()
+	g.Player.WalkingAnimation.Reset()
 	
-	if !g.Player.ShootingAnimation.Done{
-		g.Player.ShootingAnimation.CurrentFrame ++
-		g.Player.ShootingAnimation.Animate = true
+	if g.Player.IsShooting(){
+		g.Player.Shoot(true)
+		g.Player.Gun.Bullet.Coords.Y = g.Player.Coords.Y
+		g.Player.Gun.Bullet.Coords.X = g.Player.Coords.X
 		return nil
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyW){
-		g.Player.WalkingAnimation.Animate = true
-		g.Player.WalkingAnimation.CurrentFrame ++
-		g.Player.Coords.Y --
-	}else if ebiten.IsKeyPressed(ebiten.KeyS){
-		g.Player.WalkingAnimation.Animate = true
-		g.Player.WalkingAnimation.CurrentFrame ++
-		g.Player.Coords.Y ++ 
-		
-	}
 	if ebiten.IsKeyPressed(ebiten.KeyD){
-		g.Player.WalkingAnimation.Animate = true
-		g.Player.WalkingAnimation.CurrentFrame ++
-		g.Player.Coords.X ++
-		g.Player.FacingFront = true
+		g.Player.Walk("F")
 	}else if ebiten.IsKeyPressed(ebiten.KeyA){
-		g.Player.WalkingAnimation.Animate = true
-		g.Player.WalkingAnimation.CurrentFrame ++
-		g.Player.Coords.X --
-		g.Player.FacingFront = false	
-	
+		g.Player.Walk("B")
 	}
+	if ebiten.IsKeyPressed(ebiten.KeyW){
+		g.Player.Walk("U")
+	}else if ebiten.IsKeyPressed(ebiten.KeyS){
+		g.Player.Walk("D")
+	}
+	
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
-		g.Player.ShootingAnimation.Animate = true
-		g.Player.ShootingAnimation.Done = false
-		g.Player.ShootingAnimation.CurrentFrame ++
+		g.Player.Shoot(false)
 	}
 
-	if !g.Player.WalkingAnimation.Animate && !g.Player.ShootingAnimation.Animate{
-		g.Player.IdleAnimation.CurrentFrame ++
-		g.Player.IdleAnimation.Animate = true
+	if g.Player.IsIdle(){
+		g.Player.Idle()
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyQ){
@@ -81,25 +67,34 @@ func (g *Game) Draw(screen *ebiten.Image){
 	}
 	g.Player.Op.GeoM.Translate(float64(g.Player.Coords.X),float64(g.Player.Coords.Y))
 	
-	if g.Player.WalkingAnimation.Animate {
+	if g.Player.IsWalking(){
 		f := (g.Player.WalkingAnimation.CurrentFrame / 10 ) % g.Player.WalkingAnimation.FrameNum
 		x, y := g.Player.WalkingAnimation.FrameWidth*f, g.Player.WalkingAnimation.StartY
-		screen.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image), g.Player.Op)
-	}else if g.Player.IdleAnimation.Animate{
+		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+	}else if g.Player.IsIdle(){
 		f := (g.Player.IdleAnimation.CurrentFrame / 20) % g.Player.IdleAnimation.FrameNum
 		x, y := g.Player.IdleAnimation.FrameWidth*f, g.Player.IdleAnimation.StartY
-		screen.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.IdleAnimation.FrameWidth, y + g.Player.IdleAnimation.FrameHeight)).(*ebiten.Image), g.Player.Op)
+		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
 		
-	}else if g.Player.ShootingAnimation.Animate{
+	}else if g.Player.IsShooting(){
 		f := (g.Player.ShootingAnimation.CurrentFrame / 5) % g.Player.ShootingAnimation.FrameNum
 		x, y := g.Player.ShootingAnimation.FrameWidth*f, g.Player.ShootingAnimation.StartY
-		screen.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.ShootingAnimation.FrameWidth, y + g.Player.ShootingAnimation.FrameHeight)).(*ebiten.Image), g.Player.Op)
-		if g.Player.ShootingAnimation.CurrentFrame == g.Player.ShootingAnimation.FrameNum*5{
-			g.Player.ShootingAnimation.Done = true
+		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+		if g.Player.ShootingAnimation.CurrentFrame == g.Player.ShootingAnimation.FrameNum*5{ //done shooting
+			g.Player.ShootingAnimation.Reset()
 			g.Player.ShootingAnimation.CurrentFrame = 1
 		}
-	}	
-	ebitenutil.DebugPrint(screen, strconv.Itoa(int(ebiten.CurrentFPS())))
+	}
+	if g.Player.Gun.Bullet.IsHit(){
+		g.Player.Gun.Bullet.Move()
+		g.Player.Gun.Bullet.Op.GeoM.Reset()
+		//g.Player.Gun.Bullet.Op.GeoM.Translate(-float64(0.5), -float64(05)) //make the point centered
+		//g.Player.Gun.Bullet.Op.GeoM.Scale(10,10)
+		//println(g.Player.Gun.Bullet.Coords.X)
+		g.Player.Gun.Bullet.Op.GeoM.Translate(float64(g.Player.Gun.Bullet.Coords.X), float64(g.Player.Gun.Bullet.Coords.Y))
+		screen.DrawImage(g.Player.Gun.Bullet.Img, g.Player.Gun.Bullet.Op)
+	}
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v", g.Player.Gun.Bullets))
 }
 
 // Layout lays the screen
@@ -110,7 +105,11 @@ func (g *Game) Layout(outsideWidth, outsideHeight int)(int, int){
 
 
 func main(){
-	img,_, err := ebitenutil.NewImageFromFile("assets/hero_spritesheet.png")
+	player,_, err := ebitenutil.NewImageFromFile("assets/hero_spritesheet.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %w", err)
+	}
+	bullet,_, err := ebitenutil.NewImageFromFile("assets/bullet.png")
 	if err != nil {
 		log.Fatalf("Cannot load the assets err : %w", err)
 	}
@@ -118,7 +117,7 @@ func main(){
 	w, h := ebiten.ScreenSizeInFullscreen()
 	g := Game{
 		Player: models.Player{
-			Img: img,
+			Img: player,
 			Op: &ebiten.DrawImageOptions{},
 			Coords: models.Coordinates{
 				X: w/2,
@@ -148,7 +147,14 @@ func main(){
 				FrameHeight: 80,
 				FrameWidth: 80,
 				Animate: false,
-				Done: true,
+			},
+			Gun: models.Gun{
+				Bullets: 60,
+				Bullet: models.Bullet{
+					Img: bullet,
+					Op: &ebiten.DrawImageOptions{},
+					Hit: false,
+				},
 			},
 			FacingFront: true,
 		},
