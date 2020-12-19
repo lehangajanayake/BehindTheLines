@@ -1,7 +1,6 @@
 package models
 
 import (
-	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
