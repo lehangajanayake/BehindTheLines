@@ -1,9 +1,14 @@
 package models
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"sync"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 //Player model player
 type Player struct{
+	Mutex sync.Mutex
 	Img *ebiten.Image
 	Coords Coordinates
 	FacingFront bool
@@ -12,14 +17,3 @@ type Player struct{
 	IdleAnimation Animation
 }
 
-//Coordinates contains the x and y value
-type Coordinates struct{
-	X, Y int
-}
-
-//Animation model for animation
-type Animation struct{
-	Animate bool
-	FrameNum, CurrentFrame, FrameHeight, FrameWidth int
-	AnimationArray []Coordinates
-}

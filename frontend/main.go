@@ -27,7 +27,8 @@ func (g *Game) Update()error{
 	g.Player.IdleAnimation.CurrentFrame ++
 	g.Player.WalkingAnimation.Animate = false
 	go func(){
-		
+		g.Player.Mutex.Lock()
+		defer g.Player.Mutex.Unlock()
 		if ebiten.IsKeyPressed(ebiten.KeyW){
 			g.Player.WalkingAnimation.Animate = true
 			g.Player.WalkingAnimation.CurrentFrame ++
@@ -40,6 +41,8 @@ func (g *Game) Update()error{
 		}
 	}()
 	go func() {
+		g.Player.Mutex.Lock()
+		defer g.Player.Mutex.Unlock()
 		if ebiten.IsKeyPressed(ebiten.KeyA){
 			g.Player.WalkingAnimation.Animate = true
 			g.Player.WalkingAnimation.CurrentFrame ++
@@ -138,7 +141,7 @@ func main(){
 		},
 		Frames: 0,
 	}
-	if err := ebiten.RunGame(&g); err != nil {
+	if err := ebiten.RunGame(&g); err != nil && ebiten.IsKeyPressed(ebiten.KeyQ){
 		log.Fatal(err)
 	}
 }
