@@ -62,6 +62,8 @@ func (g *Game) Update()error{
 }
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
+	g.Player.Mutex.Lock()
+	defer g.Player.Mutex.Unlock()
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axiz of the player in teh midlle instead of the upper left conner
 	if g.Player.FacingFront{
