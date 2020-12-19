@@ -5,6 +5,7 @@ import (
 	_ "image/png"
 	"log"
 	"strconv"
+	"sync/atomic"
 
 	//"math"
 
@@ -26,44 +27,34 @@ type Game struct{
 func (g *Game) Update()error{
 	g.Player.IdleAnimation.CurrentFrame ++
 	g.Player.WalkingAnimation.Animate = false
-	go func(){
-		g.Player.Mutex.Lock()
-		defer g.Player.Mutex.Unlock()
-		if ebiten.IsKeyPressed(ebiten.KeyW){
-			g.Player.WalkingAnimation.Animate = true
-			g.Player.WalkingAnimation.CurrentFrame ++
-			g.Player.Coords.Y --
-		}else if ebiten.IsKeyPressed(ebiten.KeyS){
-			g.Player.WalkingAnimation.Animate = true
-			g.Player.WalkingAnimation.CurrentFrame ++
-			g.Player.Coords.Y ++ 
-			
-		}
-	}()
-	go func() {
-		g.Player.Mutex.Lock()
-		defer g.Player.Mutex.Unlock()
-		if ebiten.IsKeyPressed(ebiten.KeyA){
-			g.Player.WalkingAnimation.Animate = true
-			g.Player.WalkingAnimation.CurrentFrame ++
-			g.Player.Coords.X --
-			g.Player.FacingFront = false
-		}else if ebiten.IsKeyPressed(ebiten.KeyD){
-			g.Player.WalkingAnimation.Animate = true
-			g.Player.WalkingAnimation.CurrentFrame ++
-			g.Player.Coords.X ++
-			g.Player.FacingFront = true
-			
-		}
-	}()
+	if ebiten.IsKeyPressed(ebiten.KeyW){
+		g.Player.WalkingAnimation.Animate = true
+		g.Player.WalkingAnimation.CurrentFrame ++
+		g.Player.Coords.Y --
+	}else if ebiten.IsKeyPressed(ebiten.KeyS){
+		g.Player.WalkingAnimation.Animate = true
+		g.Player.WalkingAnimation.CurrentFrame ++
+		g.Player.Coords.Y ++ 
 		
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyA){
+		g.Player.WalkingAnimation.Animate = true
+		g.Player.Coords.X --
+		g.Player.FacingFront = false
+	}else if ebiten.IsKeyPressed(ebiten.KeyD){
+		g.Player.WalkingAnimation.Animate = true
+		g.Player.WalkingAnimation.CurrentFrame ++
+		g.Player.Coords.X ++
+		g.Player.FacingFront = true
+		
+	
+	}
 
 	return nil
 }
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
-	g.Player.Mutex.Lock()
-	defer g.Player.Mutex.Unlock()
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axiz of the player in teh midlle instead of the upper left conner
 	if g.Player.FacingFront{
@@ -143,7 +134,7 @@ func main(){
 		},
 		Frames: 0,
 	}
-	if err := ebiten.RunGame(&g); err != nil && ebiten.IsKeyPressed(ebiten.KeyQ){
+	if err := ebiten.RunGame(&g); err != nil || ebiten.IsKeyPressed(ebiten.KeyQ){
 		log.Fatal(err)
 	}
 }

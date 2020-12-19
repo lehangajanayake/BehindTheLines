@@ -8,7 +8,6 @@ import (
 
 //Player model player
 type Player struct{
-	Mutex sync.Mutex
 	Img *ebiten.Image
 	Coords Coordinates
 	FacingFront bool
