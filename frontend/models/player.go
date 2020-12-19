@@ -13,5 +13,6 @@ type Player struct{
 	Op *ebiten.DrawImageOptions
 	WalkingAnimation Animation
 	IdleAnimation Animation
+	ShootingAnimation Animation
 }
 

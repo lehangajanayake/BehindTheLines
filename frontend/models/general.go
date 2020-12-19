@@ -8,6 +8,5 @@ type Coordinates struct{
 //Animation model for animation
 type Animation struct{
 	Animate bool
-	FrameNum, CurrentFrame, FrameHeight, FrameWidth int
-	AnimationArray []Coordinates
+	FrameNum, CurrentFrame, FrameHeight, FrameWidth, StartX, StartY int
 }
