@@ -67,7 +67,7 @@ func (g *Game) Update()error{
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
 	g.Player.Op.GeoM.Reset()
-	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axiz of the player in teh midlle instead of the upper left conner
+	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
 	if g.Player.FacingFront{
 		g.Player.Op.GeoM.Scale(1,1)
 	}else{
@@ -103,12 +103,6 @@ func (g *Game) Draw(screen *ebiten.Image){
 			v.Op.GeoM.Translate(float64(v.Coords.X), float64(v.Coords.Y))
 			v.Render(screen, g.BulletImg)
 		}
-		// g.Player.Gun.Bullet.Move()
-		// g.Player.Gun.Bullet.Op.GeoM.Reset()
-		// //g.Player.Gun.Bullet.Op.GeoM.Translate(-float64(0.5), -float64(05)) //make the point centered
-		// g.Player.Gun.Bullet.Op.GeoM.Scale(4,2)
-		// //println(g.Player.Gun.Bullet.Coords.X)
-		// screen.DrawImage(g.Player.Gun.Bullet.Img, g.Player.Gun.Bullet.Op)
 	}
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v", g.Player.Gun.Bullets))
 }
@@ -123,11 +117,11 @@ func (g *Game) Layout(outsideWidth, outsideHeight int)(int, int){
 func main(){
 	player,_, err := ebitenutil.NewImageFromFile("assets/hero_spritesheet.png")
 	if err != nil {
-		log.Fatalf("Cannot load the assets err : %w", err)
+		log.Fatalf("Cannot load the assets err : %v", err)
 	}
 	bullet,_, err := ebitenutil.NewImageFromFile("assets/bullet.png")
 	if err != nil {
-		log.Fatalf("Cannot load the assets err : %w", err)
+		log.Fatalf("Cannot load the assets err : %v", err)
 	}
 	ebiten.SetFullscreen(true)
 	w, h := ebiten.ScreenSizeInFullscreen()
