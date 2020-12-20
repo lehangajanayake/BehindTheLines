@@ -15,6 +15,8 @@ import (
 //Game the game
 type Game struct{
 	Player models.Player
+	Bullets []*models.Bullet
+	BulletImg *ebiten.Image
 	Frames int
 }
 
@@ -24,9 +26,7 @@ func (g *Game) Update()error{
 	g.Player.WalkingAnimation.Reset()
 	
 	if g.Player.IsShooting(){
-		g.Player.Shoot(true)
-		g.Player.Gun.Bullet.Coords.Y = g.Player.Coords.Y
-		g.Player.Gun.Bullet.Coords.X = g.Player.Coords.X
+		g.Player.Shoot()
 		return nil
 	}
 
@@ -43,7 +43,15 @@ func (g *Game) Update()error{
 	
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
-		g.Player.Shoot(false)
+		g.Player.Shoot()
+		g.Bullets = append(g.Bullets, &models.Bullet{
+			Op: &ebiten.DrawImageOptions{},
+			Coords: models.Coordinates{
+				X: g.Player.Coords.X,
+				Y: g.Player.Coords.Y,
+			},
+			FacingFront: g.Player.FacingFront,
+		})
 	}
 
 	if g.Player.IsIdle(){
@@ -80,19 +88,27 @@ func (g *Game) Draw(screen *ebiten.Image){
 		f := (g.Player.ShootingAnimation.CurrentFrame / 5) % g.Player.ShootingAnimation.FrameNum
 		x, y := g.Player.ShootingAnimation.FrameWidth*f, g.Player.ShootingAnimation.StartY
 		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+		
 		if g.Player.ShootingAnimation.CurrentFrame == g.Player.ShootingAnimation.FrameNum*5{ //done shooting
 			g.Player.ShootingAnimation.Reset()
 			g.Player.ShootingAnimation.CurrentFrame = 1
+			g.Player.Gun.Shoot()
 		}
 	}
-	if g.Player.Gun.Bullet.IsHit(){
-		g.Player.Gun.Bullet.Move()
-		g.Player.Gun.Bullet.Op.GeoM.Reset()
-		//g.Player.Gun.Bullet.Op.GeoM.Translate(-float64(0.5), -float64(05)) //make the point centered
-		//g.Player.Gun.Bullet.Op.GeoM.Scale(10,10)
-		//println(g.Player.Gun.Bullet.Coords.X)
-		g.Player.Gun.Bullet.Op.GeoM.Translate(float64(g.Player.Gun.Bullet.Coords.X), float64(g.Player.Gun.Bullet.Coords.Y))
-		screen.DrawImage(g.Player.Gun.Bullet.Img, g.Player.Gun.Bullet.Op)
+	if len(g.Bullets) != 0{
+		for _, v := range g.Bullets{
+			v.Move()
+			v.Op.GeoM.Reset()
+			v.Op.GeoM.Scale(4,2)
+			v.Op.GeoM.Translate(float64(v.Coords.X), float64(v.Coords.Y))
+			v.Render(screen, g.BulletImg)
+		}
+		// g.Player.Gun.Bullet.Move()
+		// g.Player.Gun.Bullet.Op.GeoM.Reset()
+		// //g.Player.Gun.Bullet.Op.GeoM.Translate(-float64(0.5), -float64(05)) //make the point centered
+		// g.Player.Gun.Bullet.Op.GeoM.Scale(4,2)
+		// //println(g.Player.Gun.Bullet.Coords.X)
+		// screen.DrawImage(g.Player.Gun.Bullet.Img, g.Player.Gun.Bullet.Op)
 	}
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v", g.Player.Gun.Bullets))
 }
@@ -150,15 +166,11 @@ func main(){
 			},
 			Gun: models.Gun{
 				Bullets: 60,
-				Bullet: models.Bullet{
-					Img: bullet,
-					Op: &ebiten.DrawImageOptions{},
-					Hit: false,
-				},
 			},
 			FacingFront: true,
 		},
 		Frames: 0,
+		BulletImg: bullet,
 	}
 	if err := ebiten.RunGame(&g); err != nil{
 		log.Fatal(err)

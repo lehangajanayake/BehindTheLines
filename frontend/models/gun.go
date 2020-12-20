@@ -10,7 +10,6 @@ import (
 type Gun struct {
 	Sound audio.Context
 	Bullets int
-	Bullet Bullet
 }
 
 //Bullet model
@@ -25,7 +24,6 @@ type Bullet struct {
 //Shoot shoots one bullet at a time
 func (g *Gun) Shoot(){
 	g.Bullets--
-	g.Bullet.Moving = true
 }
 //Move the bullet forward
 func (b *Bullet) Move(){

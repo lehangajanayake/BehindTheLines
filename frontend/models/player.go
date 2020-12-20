@@ -63,13 +63,10 @@ func (p *Player) Walk(direction string){
 }
 
 //Shoot shoots a bullet
-func (p *Player) Shoot(shot bool){
-	if !shot{
-		p.Gun.Bullet.FacingFront = p.FacingFront
-		p.Gun.Shoot()
-	}
+func (p *Player) Shoot(){
 	p.ShootingAnimation.Animate = true
 	p.ShootingAnimation.CurrentFrame ++
+	//p.Gun.Shoot()
 	
 }
 
