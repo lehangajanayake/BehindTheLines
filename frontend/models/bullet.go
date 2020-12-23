@@ -1,6 +1,12 @@
 package models
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"image"
+	//"log"
+	//"image/color"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 //Bullet model
 type Bullet struct {
@@ -31,9 +37,20 @@ func (b *Bullet) Move(){
 }
 //IsHit returns tru is it coliided woth something
 func (b *Bullet) IsHit()bool{
-	return b.Moving
+	return b.Hit
 }
 //Render the bullet
 func (b *Bullet) Render(screen, bullet *ebiten.Image)  {
 	screen.DrawImage(bullet, b.Op)
+}
+
+//Collides telles whether the player is goona collide with te  object
+func (b *Bullet) Collides(object image.Rectangle)bool {
+	bullet := image.Rect(b.Coords.X , b.Coords.Y , b.Coords.X + 4, b.Coords.Y + 2)
+	if bullet.Overlaps(object){
+		
+		//go log.Println(b.IsHit())
+		return true
+	}
+	return false
 }

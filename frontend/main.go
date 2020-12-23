@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	_ "image/png"
+	"sync"
 
 	//"io/ioutil"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/lafriks/go-tiled"
 	"github.com/lehangajanayake/MissionImposible/frontend/models"
 )
 
@@ -64,18 +66,48 @@ func (g *Game) Update()error{
 			g.Player.Walk("D")
 		}	
 	}
-	
-		for _, obj := range g.Map.Obstacles{
-			if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
-				if g.Player.LastPos != g.Player.Coords {
-					g.Player.Coords = g.Player.LastPos
-					return nil
-				}
-			}
-			
+	for _,v:= range g.Bullets{
+		if !v.IsHit(){
+			v.Move()
 		}
-		g.Camera.Move(g.Player.Coords)
-		g.Player.LastPos = g.Player.Coords
+	}
+	collide := make(chan bool)
+	var wg sync.WaitGroup
+	for _, obj := range g.Map.Obstacles{
+		wg.Add(1)
+		go func(obj *tiled.Object, wg *sync.WaitGroup) {
+			defer wg.Done()
+			if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
+				collide <- true
+			}	
+		}(obj, &wg)
+		
+		for i, v :=  range g.Bullets{
+			if v.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
+				g.Bullets = append(g.Bullets[:i], g.Bullets[i+1:]...)
+			}
+		}
+	
+		
+	}
+	done := make(chan bool)
+	
+	go func(done chan bool) {
+		for v := range collide{
+			if v {
+				g.Player.Coords = g.Player.LastPos
+				break
+			}
+		}
+		done <- true
+	}(done)
+	
+	wg.Wait()
+	close(collide)
+	<-done
+	
+	
+	g.Player.LastPos = g.Player.Coords
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
 		g.Player.Shoot()
 		bullet := new(models.Bullet)
@@ -89,7 +121,15 @@ func (g *Game) Update()error{
 	if ebiten.IsKeyPressed(ebiten.KeyQ){
 		return errors.New("Game Exited by the user")
 	}
-	
+	if g.Player.Coords.X > g.ScreenWidth /2 {
+		g.Camera.Move(models.Coordinates{X:g.Player.Coords.X, Y:g.ScreenHeight /2})
+	}
+	if g.Player.Coords.Y > g.ScreenHeight/2{
+		g.Camera.Move(models.Coordinates{ X: g.ScreenWidth/2, Y: g.Player.Coords.Y})
+	}
+	if g.Player.Coords.X > g.ScreenWidth /2 && g.Player.Coords.Y > g.ScreenHeight /2 {
+		g.Camera.Move(g.Player.Coords)
+	}
 	return nil
 }
 // Draw draws to the screen every update
@@ -126,16 +166,16 @@ func (g *Game) Draw(screen *ebiten.Image){
 	}
 	if len(g.Bullets) != 0{
 		for _, v := range g.Bullets{
-			v.Move()
 			v.Op.GeoM.Reset()
 			v.Op.GeoM.Scale(4,2)
 			v.Op.GeoM.Translate(float64(v.Coords.X), float64(v.Coords.Y))
 			v.Render(g.Camera.View, g.BulletImg)
+			
 		}
 	}
 	g.Camera.Render(screen)
 	g.Camera.View.Clear()
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v", g.Player.Gun.Bullets))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v , Current TPS: %0.2f, Current FPS: %0.2f", g.Player.Gun.Bullets , ebiten.CurrentTPS(), ebiten.CurrentFPS()))
 }
 
 // Layout lays the screen

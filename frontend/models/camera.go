@@ -1,6 +1,8 @@
 package models
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 //Camera is the model camera
 type Camera struct{
