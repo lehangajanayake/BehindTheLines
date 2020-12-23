@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.3" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="18">
+<map version="1.4" tiledversion="1.4.3" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="19">
  <editorsettings>
   <export target="grass..json" format="json"/>
  </editorsettings>
@@ -225,5 +225,6 @@
   <object id="13" x="314.667" y="530.667"/>
   <object id="14" x="314.667" y="530.667"/>
   <object id="17" x="614.636" y="703.091" width="18.3636" height="28.3636"/>
+  <object id="18" x="753.333" y="484" width="61.3333" height="33.3333"/>
  </objectgroup>
 </map>

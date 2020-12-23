@@ -62,9 +62,20 @@ func (g *Game) Update()error{
 			g.Player.Run("D")
 		}else{
 			g.Player.Walk("D")
-		}	}
+		}	
+	}
 	
-
+		for _, obj := range g.Map.Obstacles{
+			if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
+				if g.Player.LastPos != g.Player.Coords {
+					g.Player.Coords = g.Player.LastPos
+					return nil
+				}
+			}
+			
+		}
+		g.Camera.Move(g.Player.Coords)
+		g.Player.LastPos = g.Player.Coords
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
 		g.Player.Shoot()
 		bullet := new(models.Bullet)
@@ -78,24 +89,12 @@ func (g *Game) Update()error{
 	if ebiten.IsKeyPressed(ebiten.KeyQ){
 		return errors.New("Game Exited by the user")
 	}
-	for _, obj := range g.Map.Obstacles{
-		if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
-			if g.Player.LastPos != g.Player.Coords {
-				g.Player.Coords = g.Player.LastPos
-				return nil
-			}
-		}
-		
-	}
-	g.Camera.Position = g.Player.Coords
-	g.Player.LastPos = g.Player.Coords
+	
 	return nil
 }
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
-	
-	//var colliding bool
-	screen.DrawImage(g.Map.Img, g.Map.Op)
+	g.Camera.View.DrawImage(g.Map.Img, g.Map.Op)
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
 	if g.Player.FacingFront{
@@ -108,16 +107,16 @@ func (g *Game) Draw(screen *ebiten.Image){
 	if g.Player.IsWalking(){
 		f := (g.Player.WalkingAnimation.CurrentFrame / 10 ) % g.Player.WalkingAnimation.FrameNum
 		x, y := g.Player.WalkingAnimation.FrameWidth*f, g.Player.WalkingAnimation.StartY
-		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
 	}else if g.Player.IsIdle(){
 		f := (g.Player.IdleAnimation.CurrentFrame / 20) % g.Player.IdleAnimation.FrameNum
 		x, y := g.Player.IdleAnimation.FrameWidth*f, g.Player.IdleAnimation.StartY
-		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
 		
 	}else if g.Player.IsShooting(){
 		f := (g.Player.ShootingAnimation.CurrentFrame / 3) % g.Player.ShootingAnimation.FrameNum
 		x, y := g.Player.ShootingAnimation.FrameWidth*f, g.Player.ShootingAnimation.StartY
-		g.Player.Render(screen, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
 		
 		if g.Player.ShootingAnimation.CurrentFrame == g.Player.ShootingAnimation.FrameNum*3{ //done shooting
 			g.Player.ShootingAnimation.Reset()
@@ -131,10 +130,11 @@ func (g *Game) Draw(screen *ebiten.Image){
 			v.Op.GeoM.Reset()
 			v.Op.GeoM.Scale(4,2)
 			v.Op.GeoM.Translate(float64(v.Coords.X), float64(v.Coords.Y))
-			v.Render(screen, g.BulletImg)
+			v.Render(g.Camera.View, g.BulletImg)
 		}
 	}
-	g.Camera.Render(screen, )
+	g.Camera.Render(screen)
+	g.Camera.View.Clear()
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v", g.Player.Gun.Bullets))
 }
 
@@ -199,12 +199,15 @@ func main(){
 		},
 		Frames: 0,
 		BulletImg: bullet,
-		Map: new(models.Map),
+		Map: &models.Map{
+			Op: &ebiten.DrawImageOptions{},
+		},
 		Camera: &models.Camera{
 			Position : models.Coordinates{
 				X: w/2,
 				Y: h/2,
 			},
+			Op: &ebiten.GeoM{},
 		},
 	}
 	err = g.Map.LoadMap("assets/grass.tmx")
@@ -212,19 +215,9 @@ func main(){
 		log.Fatalf("Err loading the map : %v", err)
 	}
 	g.Map.LoadObstacles(0)
+	g.Camera.View = ebiten.NewImage(g.Map.Img.Size())
 	if err := ebiten.RunGame(&g); err != nil{
 		log.Fatal(err)
 	}
 	
-}
-
-//Iscolliding
-func IsColliding(object1, object2 image.Rectangle) bool{
-	if object1.Min.X < object2.Max.X &&
-	object1.Max.X > object2.Min.X &&
-	object1.Min.Y < object2.Max.Y &&
-	object1.Max.Y > object2.Min.Y{
-		return true
-	}
-	return false
 }

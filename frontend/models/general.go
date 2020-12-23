@@ -14,4 +14,5 @@ type Animation struct{
 //Reset the animation
 func (a *Animation)Reset(){
 	a.Animate = false
+	//a.CurrentFrame = 1
 }
