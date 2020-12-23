@@ -1,6 +1,7 @@
 package models
 
 import (
+	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -9,6 +10,7 @@ import (
 type Player struct{
 	Img *ebiten.Image
 	Coords Coordinates
+	LastPos Coordinates
 	FacingFront bool
 	Op *ebiten.DrawImageOptions
 	Gun  Gun
@@ -62,7 +64,7 @@ func (p *Player) Walk(direction string){
 	
 }
 
-//Walk make the player walk
+//Run make the player run
 func (p *Player) Run(direction string){
 	switch direction{
 	case "F": //Forward
@@ -98,4 +100,10 @@ func (p *Player) Shoot(){
 //IsShooting returns true if the player is in shooting animation
 func (p *Player) IsShooting()bool{
 	return p.ShootingAnimation.Animate
+}
+
+//Collides telles whether the player is goona collide with te  object
+func (p *Player) Collides(object image.Rectangle) bool {
+	player := image.Rect(p.Coords.X - 10, p.Coords.Y -  10, p.Coords.X + 10, p.Coords.Y + 20)
+	return player.Overlaps(object)
 }
