@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/color"
 	_ "image/png"
 	"sync"
 
@@ -135,10 +134,6 @@ func (g *Game) Update()error{
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
 	g.Camera.View.DrawImage(g.Map.World, g.Map.Op)
-	for _, v := range g.Map.Obstacles{
-		ebitenutil.DrawRect(g.Camera.View, v.X, v.Y, v.Width, v.Height, color.Black)
-		//log.Print("hi\n")
-	}
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
 	if g.Player.FacingFront{
