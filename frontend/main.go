@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/png"
 	"sync"
 
@@ -80,13 +81,14 @@ func (g *Game) Update()error{
 			if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
 				collide <- true
 			}	
+			for i, v :=  range g.Bullets{
+				if v.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
+					g.Bullets = append(g.Bullets[:i], g.Bullets[i+1:]...)
+				}
+			}
 		}(obj, &wg)
 		
-		for i, v :=  range g.Bullets{
-			if v.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
-				g.Bullets = append(g.Bullets[:i], g.Bullets[i+1:]...)
-			}
-		}
+		
 	
 		
 	}
@@ -96,7 +98,6 @@ func (g *Game) Update()error{
 		for v := range collide{
 			if v {
 				g.Player.Coords = g.Player.LastPos
-				break
 			}
 		}
 		done <- true
@@ -121,20 +122,23 @@ func (g *Game) Update()error{
 	if ebiten.IsKeyPressed(ebiten.KeyQ){
 		return errors.New("Game Exited by the user")
 	}
-	if g.Player.Coords.X > g.ScreenWidth /2 {
-		g.Camera.Move(models.Coordinates{X:g.Player.Coords.X, Y:g.ScreenHeight /2})
-	}
-	if g.Player.Coords.Y > g.ScreenHeight/2{
-		g.Camera.Move(models.Coordinates{ X: g.ScreenWidth/2, Y: g.Player.Coords.Y})
-	}
 	if g.Player.Coords.X > g.ScreenWidth /2 && g.Player.Coords.Y > g.ScreenHeight /2 {
 		g.Camera.Move(g.Player.Coords)
+	}else if g.Player.Coords.X > g.ScreenWidth /2 {
+		g.Camera.Move(models.Coordinates{X:g.Player.Coords.X, Y:g.ScreenHeight /2})
+	}else if g.Player.Coords.Y > g.ScreenHeight/2{
+		g.Camera.Move(models.Coordinates{ X: g.ScreenWidth/2, Y: g.Player.Coords.Y})
 	}
+	
 	return nil
 }
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
-	g.Camera.View.DrawImage(g.Map.Img, g.Map.Op)
+	g.Camera.View.DrawImage(g.Map.World, g.Map.Op)
+	for _, v := range g.Map.Obstacles{
+		ebitenutil.DrawRect(g.Camera.View, v.X, v.Y, v.Width, v.Height, color.Black)
+		//log.Print("hi\n")
+	}
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
 	if g.Player.FacingFront{
@@ -173,6 +177,7 @@ func (g *Game) Draw(screen *ebiten.Image){
 			
 		}
 	}
+	g.Camera.View.DrawImage(g.Map.Trees, g.Map.Op)
 	g.Camera.Render(screen)
 	g.Camera.View.Clear()
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v , Current TPS: %0.2f, Current FPS: %0.2f", g.Player.Gun.Bullets , ebiten.CurrentTPS(), ebiten.CurrentFPS()))
@@ -250,12 +255,12 @@ func main(){
 			Op: &ebiten.GeoM{},
 		},
 	}
-	err = g.Map.LoadMap("assets/grass.tmx")
+	err = g.Map.LoadMap("assets/Map/Map1.tmx")
 	if err != nil {
 		log.Fatalf("Err loading the map : %v", err)
 	}
 	g.Map.LoadObstacles(0)
-	g.Camera.View = ebiten.NewImage(g.Map.Img.Size())
+	g.Camera.View = ebiten.NewImage(g.Map.World.Size())
 	if err := ebiten.RunGame(&g); err != nil{
 		log.Fatal(err)
 	}

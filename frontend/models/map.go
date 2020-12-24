@@ -13,7 +13,8 @@ import (
 type Map struct {
 	tile *tiled.Map
 	Op *ebiten.DrawImageOptions
-	Img *ebiten.Image
+	World *ebiten.Image
+	Trees *ebiten.Image
 	Obstacles []*tiled.Object	
 }
 
@@ -25,14 +26,14 @@ func (m *Map) LoadMap(path string)error{
 	if err != nil {
 		return err
 	}
-	render, err := render.NewRenderer(m.tile)
+	render1, err := render.NewRenderer(m.tile)
 	var buff []byte
 	buffer := bytes.NewBuffer(buff)
-	err = render.RenderVisibleLayers()
+	err = render1.RenderLayer(0)
 	if err != nil {
 		return err
 	}
-	err = render.SaveAsPng(buffer)
+	err = render1.SaveAsPng(buffer)
 	if err != nil{
 		return err
 	}
@@ -40,11 +41,27 @@ func (m *Map) LoadMap(path string)error{
 	if err != nil {
 		return err
 	}
-	m.Img = ebiten.NewImageFromImage(img)
+	m.World = ebiten.NewImageFromImage(img)
+	buffer.Reset()
+	render2, err := render.NewRenderer(m.tile)
+	err = render2.RenderLayer(1)
+	if err != nil {
+		return err
+	}
+	err = render2.SaveAsPng(buffer)
+	if err != nil{
+		return err
+	}
+	img, err = png.Decode(buffer)
+	if err != nil {
+		return err
+	}
+	m.Trees = ebiten.NewImageFromImage(img)
 	return nil
 }
 
 //LoadObstacles loads the obstacles
 func (m *Map) LoadObstacles(index int){
 	m.Obstacles = m.tile.ObjectGroups[index].Objects
+	
 }
