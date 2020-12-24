@@ -66,11 +66,6 @@ func (g *Game) Update()error{
 			g.Player.Walk("D")
 		}	
 	}
-	for _,v:= range g.Bullets{
-		if !v.IsHit(){
-			v.Move()
-		}
-	}
 	collide := make(chan bool)
 	var wg sync.WaitGroup
 	for _, obj := range g.Map.Obstacles{
@@ -165,6 +160,7 @@ func (g *Game) Draw(screen *ebiten.Image){
 	}
 	if len(g.Bullets) != 0{
 		for _, v := range g.Bullets{
+			v.Move()
 			v.Op.GeoM.Reset()
 			v.Op.GeoM.Scale(4,2)
 			v.Op.GeoM.Translate(float64(v.Coords.X), float64(v.Coords.Y))
