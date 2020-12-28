@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -106,4 +107,8 @@ func (p *Player) IsShooting()bool{
 func (p *Player) Collides(object image.Rectangle) bool {
 	player := image.Rect(p.Coords.X - 10, p.Coords.Y -  10, p.Coords.X + 10, p.Coords.Y + 20)
 	return player.Overlaps(object)
+}
+
+func (p *Player) String()string{
+	return fmt.Sprintf("X: %v, Y: %v, Front: %v", p.Coords.X, p.Coords.Y, p.FacingFront)
 }

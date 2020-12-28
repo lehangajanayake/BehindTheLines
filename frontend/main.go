@@ -30,6 +30,8 @@ type Game struct{
 
 //Update updates  the game 
 func (g *Game) Update()error{
+	g.Camera.Zoom = 1
+	g.Camera.Move(models.Coordinates{X: g.ScreenWidth /2, Y:g.ScreenHeight/2})
 	g.Player.IdleAnimation.Reset()
 	g.Player.WalkingAnimation.Reset()
 	
@@ -68,7 +70,7 @@ func (g *Game) Update()error{
 	}
 	collide := make(chan bool)
 	var wg sync.WaitGroup
-	for _, obj := range g.Map.Obstacles{
+	for _, obj := range g.Map.TransparentObstacles{
 		wg.Add(1)
 		go func(obj *tiled.Object, wg *sync.WaitGroup) {
 			defer wg.Done()
@@ -81,9 +83,6 @@ func (g *Game) Update()error{
 				}
 			}
 		}(obj, &wg)
-		
-		
-	
 		
 	}
 	done := make(chan bool)
@@ -102,6 +101,7 @@ func (g *Game) Update()error{
 	<-done
 	
 	
+	
 	g.Player.LastPos = g.Player.Coords
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
 		g.Player.Shoot()
@@ -117,12 +117,19 @@ func (g *Game) Update()error{
 		return errors.New("Game Exited by the user")
 	}
 	if g.Player.Coords.X > g.ScreenWidth /2 && g.Player.Coords.Y > g.ScreenHeight /2 {
+		for _, obj := range g.Map.BlindSpots{
+		if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
+			g.Camera.Zoom = 0.7
+			g.Camera.Move(g.Player.Coords)
+		}	
+	}
 		g.Camera.Move(g.Player.Coords)
 	}else if g.Player.Coords.X > g.ScreenWidth /2 {
 		g.Camera.Move(models.Coordinates{X:g.Player.Coords.X, Y:g.ScreenHeight /2})
 	}else if g.Player.Coords.Y > g.ScreenHeight/2{
 		g.Camera.Move(models.Coordinates{ X: g.ScreenWidth/2, Y: g.Player.Coords.Y})
 	}
+	
 	
 	return nil
 }
@@ -172,6 +179,7 @@ func (g *Game) Draw(screen *ebiten.Image){
 	g.Camera.Render(screen)
 	g.Camera.View.Clear()
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v , Current TPS: %0.2f, Current FPS: %0.2f", g.Player.Gun.Bullets , ebiten.CurrentTPS(), ebiten.CurrentFPS()))
+	ebitenutil.DebugPrint(screen, g.Player.String())
 }
 
 // Layout lays the screen
@@ -250,7 +258,8 @@ func main(){
 	if err != nil {
 		log.Fatalf("Err loading the map : %v", err)
 	}
-	g.Map.LoadObstacles(0)
+	g.Map.LoadTransparentObstacles()
+	g.Map.LoadBlindSpots()
 	g.Camera.View = ebiten.NewImage(g.Map.World.Size())
 	if err := ebiten.RunGame(&g); err != nil{
 		log.Fatal(err)

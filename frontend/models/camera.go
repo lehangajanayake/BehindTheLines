@@ -7,6 +7,7 @@ import (
 //Camera is the model camera
 type Camera struct{
 	Op *ebiten.GeoM
+	Zoom float64
 	Position Coordinates
 	View *ebiten.Image
 }
@@ -21,6 +22,7 @@ func (c *Camera) Render(screen *ebiten.Image){
 	c.Op.Reset()
 	w, h := ebiten.ScreenSizeInFullscreen()
 	c.Op.Translate(-float64(w/2), -float64(h/2))
+	c.Op.Scale(c.Zoom, c.Zoom)
 	c.Op.Translate(float64(c.Position.X), float64(c.Position.Y))
 	if c.Op.IsInvertible(){
 		c.Op.Invert()

@@ -15,7 +15,8 @@ type Map struct {
 	Op *ebiten.DrawImageOptions
 	World *ebiten.Image
 	Trees *ebiten.Image
-	Obstacles []*tiled.Object	
+	TransparentObstacles []*tiled.Object
+	BlindSpots []*tiled.Object
 }
 
 
@@ -60,8 +61,13 @@ func (m *Map) LoadMap(path string)error{
 	return nil
 }
 
-//LoadObstacles loads the obstacles
-func (m *Map) LoadObstacles(index int){
-	m.Obstacles = m.tile.ObjectGroups[index].Objects
+//LoadTransparentObstacles loads the TransparentObstacles
+func (m *Map) LoadTransparentObstacles(){
+	m.TransparentObstacles = m.tile.ObjectGroups[0].Objects
 	
+}
+
+//LoadBlindSpots loads all the blind spots in the map
+func (m *Map) LoadBlindSpots(){
+	m.BlindSpots = m.tile.ObjectGroups[1].Objects
 }
