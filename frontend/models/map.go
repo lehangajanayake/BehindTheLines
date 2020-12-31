@@ -17,6 +17,7 @@ type Map struct {
 	Trees *ebiten.Image
 	TransparentObstacles []*tiled.Object
 	BlindSpots []*tiled.Object
+	RayObjects []*tiled.Object
 }
 
 
@@ -70,4 +71,9 @@ func (m *Map) LoadTransparentObstacles(){
 //LoadBlindSpots loads all the blind spots in the map
 func (m *Map) LoadBlindSpots(){
 	m.BlindSpots = m.tile.ObjectGroups[1].Objects
+}
+
+//LoadRayObjects loads all the blind spots in the map
+func (m *Map) LoadRayObjects(){
+	m.RayObjects = m.tile.ObjectGroups[1].Objects
 }
