@@ -1,53 +1,71 @@
-package main
+package network
 
 import (
-        "bufio"
-        "fmt"
-        "net"
-        "os"
-        "strings"
+	"log"
+	"net"
+	"strconv"
 )
 
-func main() {
-        arguments := os.Args
-        if len(arguments) == 1 {
-                fmt.Println("Please provide a host:port string")
-                return
-        }
-        CONNECT := arguments[1]
+//Global connection to the server
+var conn net.Conn
 
-        s, err := net.ResolveUDPAddr("udp", CONNECT)
-        c, err := net.DialUDP("udp ", nil, s)
+//Connect connects to the server
+func Connect() {
+        var err error
+        conn, err = net.Dial("tcp", "localhost:8080")
         if err != nil {
-                fmt.Println(err)
-                return
+                log.Fatal("Error connecting to the server")
         }
+}
 
-        fmt.Printf("The UDP server is %s\n", c.RemoteAddr().String())
-        defer c.Close()
-
-        for {
-                reader := bufio.NewReader(os.Stdin)
-                fmt.Print(">> ")
-                text, _ := reader.ReadString('\n')
-                data := []byte(text + "\n")
-                _, err = c.Write(data)
-                if strings.TrimSpace(string(data)) == "STOP" {
-                        fmt.Println("Exiting UDP client!")
-                        return
+//Start starts the client
+func Start(player *Player, players []*Player){
+        readstrchan := make(chan string)
+        sendstrchan := make(chan string)
+        errchan := make(chan error)
+        go read(readstrchan, errchan)
+        go send(sendstrchan, errchan)
+        first := true // is the handshake done
+        for first{
+                select{
+                case str := <- readstrchan:
+                        var err error
+                        if checkLobby(str){
+                                log.Println("Waiting in the Lobby")
+                                continue
+                        }
+                        player.ID, err = strconv.Atoi(str)
+                        if err != nil {
+                                log.Fatalf("Error getting the player IDk, %s", err.Error())
+                                break
+                        }
+                        first = false
+                      
+                case err := <- errchan:
+                        log.Fatal(err)
                 }
-
-                if err != nil {
-                        fmt.Println(err)
-                        return
+                //sendstrchan <- player.String()
+        }
+        for{
+                log.Println(player.String())
+                sendstrchan <- player.String()
+                print("help")
+                select{
+                case str := <- readstrchan:
+                        println("read info")
+                        for _, v := range players{
+                                err := v.Decode(str)
+                                if err != nil {
+                                        if err.Error() == "Wrong Player"{
+                                                continue
+                                        }
+                                        log.Println("Error updating the Player")
+                                }
                 }
-
-                buffer := make([]byte, 1024)
-                n, _, err := c.ReadFromUDP(buffer)
-                if err != nil {
-                        fmt.Println(err)
-                        return
+                case err := <- errchan:
+                        log.Fatalf("Error getting informaition from the server, %v", err)
                 }
-                fmt.Printf("Reply: %s\n", string(buffer[0:n]))
+               
+                
         }
 }

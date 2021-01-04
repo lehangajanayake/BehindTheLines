@@ -5,19 +5,18 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/lehangajanayake/MissionImposible/frontend/network"
 )
 
 //Player model player
 type Player struct{
 	Img *ebiten.Image
-	Coords Coordinates
-	LastPos Coordinates
+	Coords, LastPos Coordinates
 	FacingFront bool
 	Op *ebiten.DrawImageOptions
 	Gun  Gun
-	WalkingAnimation Animation
-	IdleAnimation Animation
-	ShootingAnimation Animation
+	WalkingAnimation, IdleAnimation, ShootingAnimation Animation
+	Network network.Player
 }
 
 //Render reders a plyer in the screen

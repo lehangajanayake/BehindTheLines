@@ -17,11 +17,13 @@ import (
 	"github.com/lafriks/go-tiled"
 	"github.com/lehangajanayake/MissionImposible/frontend/models"
 	"github.com/lehangajanayake/MissionImposible/frontend/ray"
+	"github.com/lehangajanayake/MissionImposible/frontend/network"
 )
 
 //Game the game
 type Game struct{
-	Player models.Player
+	Player *models.Player
+	Players []*network.Player
 	Bullets []*models.Bullet
 	BulletImg *ebiten.Image
 	Frames int
@@ -76,6 +78,16 @@ func (g *Game) Update()error{
 	collide := make(chan bool)
 	var wg sync.WaitGroup
 	for _, obj := range g.Map.TransparentObstacles{
+		wg.Add(1)
+		go func(obj *tiled.Object, wg *sync.WaitGroup) {
+			defer wg.Done()
+			if g.Player.Collides(image.Rect(int(obj.X), int(obj.Y), int(obj.X + obj.Width), int(obj.Y + obj.Height))){
+				collide <- true
+			}	
+		}(obj, &wg)
+		
+	}
+	for _, obj := range g.Map.RayObjects{
 		wg.Add(1)
 		go func(obj *tiled.Object, wg *sync.WaitGroup) {
 			defer wg.Done()
@@ -140,35 +152,11 @@ func (g *Game) Update()error{
 }
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
-	g.ShadowImg.Fill(color.Black)
-	//log.Println(g.RayObjects)
-	rays := ray.Cast(float64(g.Player.Coords.X), float64(g.Player.Coords.Y), g.RayObjects)
-
-	// Subtract ray triangles from shadow
-	opt := &ebiten.DrawTrianglesOptions{}
-	opt.Address = ebiten.AddressRepeat
-	opt.CompositeMode = ebiten.CompositeModeSourceOut
-	for i, line := range rays {
-		nextLine := rays[(i+1)%len(rays)]
-
-		// Draw triangle of area between rays
-		v := ray.Vertices(float64(g.Player.Coords.X), float64(g.Player.Coords.Y), nextLine.X2, nextLine.Y2, line.X2, line.Y2)
-		g.ShadowImg.DrawTriangles(v, []uint16{0, 1, 2}, g.TriangleImg, opt)
-	}
+	
 	
 
 	g.Camera.View.DrawImage(g.Map.World, g.Map.Op)
-	op := &ebiten.DrawImageOptions{}
-	op.ColorM.Scale(1, 1, 1, 0.7)
-	g.Camera.View.DrawImage(g.ShadowImg, op)
-
-	for _, r := range rays {
-		ebitenutil.DrawLine(g.Camera.View, r.X1, r.Y1, r.X2, r.Y2, color.RGBA{255, 255, 0, 150})
-	}
-
-	for _, v := range g.Map.RayObjects{
-		ebitenutil.DrawRect(g.Camera.View, v.X, v.Y, v.Width, v.Height, color.Black)
-	}
+	
 	
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
@@ -199,6 +187,8 @@ func (g *Game) Draw(screen *ebiten.Image){
 			g.Player.Gun.Shoot()
 		}
 	}
+
+	
 	if len(g.Bullets) != 0{
 		for _, v := range g.Bullets{
 			v.Move()
@@ -209,11 +199,34 @@ func (g *Game) Draw(screen *ebiten.Image){
 			
 		}
 	}
+	
+	//render the trees
 	g.Camera.View.DrawImage(g.Map.Trees, g.Map.Op)
+	//render teh shadow
+	g.ShadowImg.Fill(color.Black)
+	//log.Println(g.RayObjects)
+	rays := ray.Cast(float64(g.Player.Coords.X), float64(g.Player.Coords.Y), g.RayObjects)
+
+	// Subtract ray triangles from shadow
+	opt := &ebiten.DrawTrianglesOptions{}
+	opt.Address = ebiten.AddressRepeat
+	opt.CompositeMode = ebiten.CompositeModeSourceOut
+	for i, line := range rays {
+		nextLine := rays[(i+1)%len(rays)]
+
+		// Draw triangle of area between rays
+		v := ray.Vertices(float64(g.Player.Coords.X), float64(g.Player.Coords.Y), nextLine.X2, nextLine.Y2, line.X2, line.Y2)
+		g.ShadowImg.DrawTriangles(v, []uint16{0, 1, 2}, g.TriangleImg, opt)
+	}		
+	op := &ebiten.DrawImageOptions{}
+	op.ColorM.Scale(1, 1, 1, 0.7)
+	g.Camera.View.DrawImage(g.ShadowImg, op)
+	//render using the camera
 	g.Camera.Render(screen)
+	//clear the camera 
 	g.Camera.View.Clear()
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("Bullets Left: %v , Current TPS: %0.2f, Current FPS: %0.2f", g.Player.Gun.Bullets , ebiten.CurrentTPS(), ebiten.CurrentFPS()))
-	ebitenutil.DebugPrint(screen, g.Player.String())
+	//ebitenutil.DebugPrint(screen, g.Player.String())
 }
 
 // Layout lays the screen
@@ -233,12 +246,12 @@ func main(){
 		log.Fatalf("Cannot load the assets err : %v", err)
 	}
 
-	ebiten.SetFullscreen(true)
 	w, h := ebiten.ScreenSizeInFullscreen()
+	ebiten.SetWindowSize(w,h)
 	g := Game{
 		ScreenWidth: w,
 		ScreenHeight: h,
-		Player: models.Player{
+		Player: &models.Player{
 			Img: player,
 			Op: &ebiten.DrawImageOptions{},
 			Coords: models.Coordinates{
@@ -275,6 +288,7 @@ func main(){
 			},
 			FacingFront: true,
 		},
+		
 		Frames: 0,
 		BulletImg: bullet,
 		Map: &models.Map{
@@ -299,6 +313,8 @@ func main(){
 	g.ShadowImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg.Fill(color.White)
+	network.Connect()
+	go network.Start(&g.Player.Network, g.Players)
 	
 	//converting the tiled object layer to ray objects
 	for _, v := range g.Map.RayObjects{

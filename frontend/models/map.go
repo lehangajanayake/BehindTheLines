@@ -32,6 +32,14 @@ func (m *Map) LoadMap(path string)error{
 	var buff []byte
 	buffer := bytes.NewBuffer(buff)
 	err = render1.RenderLayer(0)
+	if err != nil{
+		return err
+	}
+	err = render1.RenderLayer(2)
+	if err != nil {
+		return err
+	}
+	err = render1.RenderLayer(3)
 	if err != nil {
 		return err
 	}
@@ -75,5 +83,5 @@ func (m *Map) LoadBlindSpots(){
 
 //LoadRayObjects loads all the blind spots in the map
 func (m *Map) LoadRayObjects(){
-	m.RayObjects = m.tile.ObjectGroups[1].Objects
+	m.RayObjects = m.tile.ObjectGroups[2].Objects
 }

@@ -1,40 +1,54 @@
 package main
 
 import (
-	"bufio"
-	"log"
+	//"log"
 	"net"
+	"time"
+
+	"github.com/MissionImposible/server/game"
+	"github.com/MissionImposible/server/network"
 )
 
 
-func main() {
-	listener, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		panic(err)
+
+func main(){
+	conns := make(chan net.Conn)
+	go network.StartServer(conns)
+	done := make(chan bool)
+	errchan := make(chan error)
+	var que []net.Conn
+	for v := range conns {
+		//v.SetDeadline(time.Now().Add(time.Second))
+		println(len(que))
+		if len(que) == 1{
+			println("hello")
+			que = append(que, v)
+			g := game.NewGame(que)
+			done <- true
+			g.Run()
+			que = nil
+		}else{
+			que = append(que, v)
+			go lobby(v, done, errchan)
+		}
+		// if err := <- errchan; err != nil{
+		// 	log.Println("Error in the lobby")
+		// 	que = append(que[:0], que[1:]...)
+		// }
 	}
+
+
+}
+
+func lobby(conn net.Conn, done chan bool, errs chan error){
 	for {
-		conn, err := listener.Accept()
+		_, err := conn.Write([]byte("Lobby\n"))
 		if err != nil {
-			log.Panicf("Error Accepting the connections: %w", err)
+			errs <- err
 		}
-		go handleConn(conn)
+		if done := <- done; done{
+			break
+		}
+		time.Sleep(1000)
 	}
 }
-
-func handleConn(conn net.Conn){
-	
-	defer conn.Close()
-	for {
-		data, err := bufio.NewReader(conn).ReadString('\n')
-		log.Println(string(data))
-		if err != nil{
-			if err.Error() == "EOF" {
-				log.Println("Connection disconnected")
-				return
-			}
-			log.Printf("Error reviving data: %w", err)
-			return
-		}
-	}
-}
-

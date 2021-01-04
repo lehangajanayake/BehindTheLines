@@ -82,7 +82,7 @@ func intersection(l1, l2 Line) (float64, float64, bool) {
 
 //Cast returns a slice of Line originating from point cx, cy and intersecting with Objects
 func Cast(cx, cy float64, Objects []Object) []Line {
-	const rayLength = 10000000 // something large enough to reach all Objects
+	const rayLength = 1000000000000 // something large enough to reach all Objects
 
 	var rays []Line
 	for _, obj := range Objects {
@@ -91,7 +91,7 @@ func Cast(cx, cy float64, Objects []Object) []Line {
 			l := Line{cx, cy, p[0], p[1]}
 			angle := l.angle()
 
-			for _, offset := range []float64{-0.000005, 0.000005} {
+			for _, offset := range [2]float64{-0.005, 0.005} {
 				points := [][2]float64{}
 				ray := newRay(cx, cy, rayLength, angle+offset)
 
