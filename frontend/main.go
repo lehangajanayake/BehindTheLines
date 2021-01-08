@@ -24,6 +24,7 @@ import (
 type Game struct{
 	Player *models.Player
 	Players []*network.Player
+	Client *network.Client
 	Bullets []*models.Bullet
 	BulletImg *ebiten.Image
 	Frames int
@@ -41,7 +42,9 @@ func (g *Game) Update()error{
 	g.Camera.Move(models.Coordinates{X: g.ScreenWidth /2, Y:g.ScreenHeight/2})
 	g.Player.IdleAnimation.Reset()
 	g.Player.WalkingAnimation.Reset()
-	
+	var netwg sync.WaitGroup
+	netwg.Add(1)
+	go g.Client.SendAndGet(&g.Player.Network, g.Players, &netwg)
 	
 	
 	if g.Player.IsShooting(){
@@ -120,6 +123,7 @@ func (g *Game) Update()error{
 	
 	
 	g.Player.LastPos = g.Player.Coords
+	g.Player.Network = network.Player{X: g.Player.Coords.X, Y: g.Player.Coords.Y, FacingFront: g.Player.FacingFront}
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
 		g.Player.Shoot()
 		bullet := new(models.Bullet)
@@ -147,7 +151,7 @@ func (g *Game) Update()error{
 		g.Camera.Move(models.Coordinates{ X: g.ScreenWidth/2, Y: g.Player.Coords.Y})
 	}
 	
-	
+	netwg.Wait()
 	return nil
 }
 // Draw draws to the screen every update
@@ -187,7 +191,18 @@ func (g *Game) Draw(screen *ebiten.Image){
 			g.Player.Gun.Shoot()
 		}
 	}
+	for _, v := range g.Players{
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
+		if v.FacingFront{
+			op.GeoM.Scale(0.5,0.5)
+		}else{
+			op.GeoM.Scale(-0.5,0.5)
+		}
+		op.GeoM.Translate(float64(v.X), float64(v.Y))
 
+		g.Camera.View.DrawImage(g.Player.Img.SubImage(image.Rect(0, 0, g.Player.WalkingAnimation.FrameWidth,g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image), op)
+	}
 	
 	if len(g.Bullets) != 0{
 		for _, v := range g.Bullets{
@@ -301,6 +316,7 @@ func main(){
 			},
 			Op: &ebiten.GeoM{},
 		},
+		Client: new(network.Client),
 	}
 	err = g.Map.LoadMap("assets/Map/Map1.tmx")
 	if err != nil {
@@ -313,8 +329,9 @@ func main(){
 	g.ShadowImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg.Fill(color.White)
-	network.Connect()
-	go network.Start(&g.Player.Network, g.Players)
+	g.Client.Connect()
+	g.Client.Start(&g.Player.Network, &g.Players)
+	g.Player.Coords = models.Coordinates{X: g.Player.Network.X, Y: g.Player.Network.Y}
 	
 	//converting the tiled object layer to ray objects
 	for _, v := range g.Map.RayObjects{

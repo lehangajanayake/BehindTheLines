@@ -1,9 +1,11 @@
 package main
 
 import (
-	//"log"
+	"bufio"
+	"log"
 	"net"
-	"time"
+
+	//"time"
 
 	"github.com/MissionImposible/server/game"
 	"github.com/MissionImposible/server/network"
@@ -12,43 +14,55 @@ import (
 
 
 func main(){
-	conns := make(chan net.Conn)
+	conns := make(chan *net.TCPConn)
 	go network.StartServer(conns)
 	done := make(chan bool)
 	errchan := make(chan error)
-	var que []net.Conn
+	var que []*net.TCPConn
+	go func() {
+		for{
+			if err := <- errchan; err != nil{
+				log.Println("Error in the lobby")
+				que = append(que[:0], que[1:]...)
+			}
+		}
+	}()
 	for v := range conns {
-		//v.SetDeadline(time.Now().Add(time.Second))
+		go lobby(v, done, errchan)
 		println(len(que))
 		if len(que) == 1{
-			println("hello")
 			que = append(que, v)
 			g := game.NewGame(que)
 			done <- true
-			g.Run()
+			log.Println(g.Run())
 			que = nil
 		}else{
 			que = append(que, v)
-			go lobby(v, done, errchan)
+			
 		}
-		// if err := <- errchan; err != nil{
-		// 	log.Println("Error in the lobby")
-		// 	que = append(que[:0], que[1:]...)
-		// }
+		
 	}
 
 
 }
 
-func lobby(conn net.Conn, done chan bool, errs chan error){
+func lobby(conn *net.TCPConn, done chan bool, errs chan error){
+	conn.SetKeepAlive(true)
+	writer := bufio.NewWriter(conn)
 	for {
-		_, err := conn.Write([]byte("Lobby\n"))
+		_, err := writer.WriteString("Lobby\n")
 		if err != nil {
 			errs <- err
+			return
+		}
+		err = writer.Flush()
+		if err != nil {
+			errs <- err
+			return
 		}
 		if done := <- done; done{
 			break
 		}
-		time.Sleep(1000)
+		//time.Sleep(time.Second *1)
 	}
 }

@@ -1,9 +1,9 @@
 package network
 
 import (
-	"errors"
+	//"errors"
 	"fmt"
-	"log"
+	//"log"
 	"strconv"
 	"strings"
 	//"sync"
@@ -23,26 +23,23 @@ func (p *Player) String()string{
 //Decode decodes the player data from a string
 func (p *Player) Decode(str string) error{
 	var err error
-	log.Println(str)
+	//log.Println(str)
 	result := strings.Split(str, ",")
-	id, err := strconv.Atoi(result[0])
+	p.ID, err = strconv.Atoi(result[0])
 	if err != nil {
-		panic("for now")
-	}
-	if id != p.ID{
-		return errors.New("Wrong Player")
+		return err
 	}
 	p.X, err = strconv.Atoi(result[1])
 	if err != nil {
-		panic("for now")
+		return err
 	}
 	p.Y , err = strconv.Atoi(result[2])
 	if err != nil {
-		panic("for now")
+		return err
 	}
 	if result[3] == "true"{
 		p.FacingFront = true
-	}
+	} 
 	p.FacingFront = false
 	if result[4] == "true"{
 		p.Guard = true
