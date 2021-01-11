@@ -12,6 +12,7 @@ import (
 //Player is the network equivalent of the games player
 type Player struct {
 	ID, X, Y int
+	Pos Coordinates
 	FacingFront, Guard bool
 }
 

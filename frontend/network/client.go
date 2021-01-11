@@ -21,11 +21,19 @@ type Client struct {
         writebuff *bufio.Writer
 }
 
+const (
+	non = byte(0)
+	updatePlayerPos = byte(1)
+	updatePlayerAnimation = byte(2)
+	newBullet = byte(3)
+	updateBulletPos = byte(4)
+)
+
 //Connect connects to the server
 func (c *Client) Connect() {
         log.SetFlags(log.Ltime | log.Lshortfile)
         var err error
-        addr, err := net.ResolveTCPAddr("tcp", "localhost:8080")
+        addr, err := net.ResolveTCPAddr("tcp", ":8080")
         c.conn, err = net.DialTCP("tcp", nil, addr)
         if err != nil {
                 log.Fatal("Error connecting to the server")
@@ -41,15 +49,14 @@ func (c *Client) read()(string, error){
         str, err := c.readbuff.ReadString('\n')
         str = strings.TrimSuffix(str, "\n")
         if err != nil {
-                
                 return "", err
         }
         return str, nil
 
 }
 
-func (c *Client) send(str string)error{
-        _, err := c.writebuff.WriteString(str + "\n")
+func (c *Client) send(packetID byte, str string)error{
+        _, err := c.writebuff.WriteString(string(packetID) + str + "\n")
         if err != nil {
                 return err
         }
@@ -60,7 +67,7 @@ func (c *Client) send(str string)error{
 
 //CheckLobby checks of the player is in the game
 func checkLobby(str string)bool{
-	log.Print("Waiting in the Lobby \r")
+	log.Printf("Waiting in the Lobby \r")
 	if str == "Lobby"{
 		return true
 	}
@@ -109,18 +116,19 @@ func (c *Client) Start(player *Player, players *[]*Player){
        // }
      str, err := c.read()
      if err != nil {
-        log.Fatal("Error getting information form the server, ", err.Error())
+        log.Fatal("Error getting information form the server, ", err)
      }
      if checkLobby(str){
         for{
                 str, err = c.read()
                 if err != nil {
-                        log.Fatal("Error getting information form the server, ", err.Error())
+                        log.Fatal("Error getting information form the server, ", err)
                 }
                 if checkLobby(str){
                         continue
                 }
-                if str == "Starting"{
+                if str[1:] == "Starting"{
+                        log.Println("starting the game")
                         break
                 }
         }
@@ -129,7 +137,7 @@ func (c *Client) Start(player *Player, players *[]*Player){
      if err != nil {
         log.Fatal("Error starting the game, ", err.Error())
      }
-     err = player.Decode(str)
+     err = player.Decode(str[1:])
      if err != nil {
              log.Fatal("Error decodeing the player, ", err.Error())
      }
@@ -138,7 +146,7 @@ func (c *Client) Start(player *Player, players *[]*Player){
      if err != nil {
         log.Fatal("Error getting information from  the serve, ", err.Error())
      }
-     num, err = strconv.Atoi(str)
+     num, err = strconv.Atoi(str[1:])
      if err != nil {
              log.Fatal("Error getting the number of players, ", err.Error())
      }
@@ -151,7 +159,7 @@ func (c *Client) Start(player *Player, players *[]*Player){
                 log.Fatal("Error getting information form the server, ", err.Error())
         }
         p := new(Player)
-        err = p.Decode(str)
+        err = p.Decode(str[1:])
         if err != nil{
                 log.Fatal("Error decodeing the player, ", err.Error())
         }
@@ -168,7 +176,7 @@ func (c *Client) Start(player *Player, players *[]*Player){
 //SendAndGet send the player to server 
 func (c *Client) SendAndGet(player *Player, players []*Player, wg *sync.WaitGroup){
         defer wg.Done()
-        err := c.send(player.String())
+        err := c.send(updatePlayerPos, player.Pos.String())
         if err !=  nil {
                 log.Println("Error sending info to the server,", err.Error())
                 return  
@@ -180,11 +188,26 @@ func (c *Client) SendAndGet(player *Player, players []*Player, wg *sync.WaitGrou
                         log.Println("Error getting the players, ", err.Error())
                         return 
                 }
-               err = v.Decode(str)
-               if err != nil {
-                       log.Println("Error decoding the player", err.Error())
-                       return
-               }
+                switch str[0]{
+                case updatePlayerPos:
+                        if str[2] != byte(v.ID){
+                                continue
+                        }
+                        str = strings.Trim(str, str[:2])
+                        err = v.Pos.Update(str)
+                        if err != nil {
+                                log.Println("Error decoding the player, ", err)
+                                return
+                        }
+                case non:
+                        str = strings.TrimPrefix(str, string(non)) 
+                        err = v.Decode(str)
+                        if err != nil {
+                               log.Println("Error decoding the player", err.Error())
+                               return
+                       }
+                }
+               
                 
         }
 }
