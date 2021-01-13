@@ -32,12 +32,16 @@ func (g *Game) AddPlayer(conn *net.TCPConn)bool{
 		FacingFront: true,
 		Guard: false,
 		Conn: conn,
-		InitialRead: make(chan string), UpdatePlayerCoordsRead: make(chan string), UpdatePlayerAnimationRead: make(chan string), UpdatePlayerFacingRead: make(chan string),
-		InitialWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
+		NewPlayerRead: make(chan string), UpdatePlayerCoordsRead: make(chan string), UpdatePlayerAnimationRead: make(chan string), UpdatePlayerFacingRead: make(chan string),
+		NewPlayerWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
 		Errchan: make(chan error),
 	}
-	g.Players = append(g.Players, p)
 	go p.Read()
+	for _, otherP := range g.Players{
+		println("Sending new player")
+		otherP.NewPlayerWrite <- p.String()
+	}
+	g.Players = append(g.Players, p)
 	return false
 
 }
@@ -59,10 +63,13 @@ func (g *Game) Run(){
 						log.Fatal("Error decoding the Player Coords: ", err)
 					}
 					for _, p := range g.Players{
+						log.Println("Sending the coord to the other players")
 						p.UpdatePlayerCoordsWrite <- v.Coords.String()
 					}
 				case err = <- v.Errchan:
 					log.Println("Error getting data: ", err)
+				default:	
+					return
 				}
 			}(v, &wg)
 			wg.Wait()

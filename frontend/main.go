@@ -16,8 +16,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/lafriks/go-tiled"
 	"github.com/lehangajanayake/MissionImposible/frontend/models"
-	"github.com/lehangajanayake/MissionImposible/frontend/ray"
 	"github.com/lehangajanayake/MissionImposible/frontend/network"
+	"github.com/lehangajanayake/MissionImposible/frontend/ray"
 )
 
 //Game the game
@@ -118,9 +118,7 @@ func (g *Game) Update()error{
 	
 	if g.Player.LastPos != g.Player.Coords{
 		coords := &network.Coordinates{X: g.Player.Coords.X, Y: g.Player.Coords.Y}
-		println(coords.String())
 		g.Client.UpdatePlayerCoordsWrite <- coords.String()
-		println("sent data")
 		g.Player.LastPos = g.Player.Coords
 	}
 	
@@ -251,6 +249,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int)(int, int){
 
 
 func main(){
+	//runtime.GOMAXPROCS(1)
 	player,_, err := ebitenutil.NewImageFromFile("assets/hero_spritesheet.png")
 	if err != nil {
 		log.Fatalf("Cannot load the assets err : %v", err)

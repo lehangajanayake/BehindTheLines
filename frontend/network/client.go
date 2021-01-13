@@ -32,7 +32,7 @@ func Connect(addr string, port string)(*Client, error){
 }
 
 const(
-	initial = '0'
+	newPlayer = '0'
 	updatePlayerCoords = '1'
 	updatePlayerAnimation = '2'
 	updatePlayerFacing = '3'
@@ -49,8 +49,14 @@ func (c *Client) Read(){
 			return
 		}
 		switch rune(str[0]){
-		case updatePlayerCoords:
+                case newPlayer:
+                        println("newPlayer")
                         str = str[1:len(str)-1] //trim the suffix and the prefix
+                        c.Players[str[0]], err = NewPlayer(str[1:])
+                        if err != nil {
+                                log.Println("Error creating a newPlayer: ", err)
+                        }
+		case updatePlayerCoords:
                         err := c.Players[str[0]].Coords.Update(str[1:])
                         if err != nil {
                                 log.Println("Error updating the player coords, ", err)
@@ -73,11 +79,10 @@ func (c *Client) Write(){
 	for {
 		select{
                 case str = <- c.UpdatePlayerCoordsWrite:
-                        println("got data")
-			data := string(updatePlayerCoords) + str
+			data := string(updatePlayerCoords) + str + "\n"
 			n, err := c.Conn.Write([]byte(data))
 			if err != nil || n != len(data) {
-				return 
+				log.Println("Error sending data to the server", err) 
 			}
 		}
 	}
@@ -87,4 +92,5 @@ func (c *Client) Write(){
 func (c *Client) Run(){
         go c.Read()
         go c.Write()
+        
 }

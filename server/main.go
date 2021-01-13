@@ -9,6 +9,7 @@ import (
 
 
 func main() {
+	log.SetFlags(log.Ltime | log.Lshortfile)
 	listener, err := startServer("0.0.0.0", "8080")
 	if err != nil {
 		log.Fatal("Error resolving the udp addr: ", err)
@@ -23,7 +24,7 @@ func main() {
 		if g.AddPlayer(conn){
 			log.Println("Starting a game")
 			go g.Run()
-			g =  &game.Game{PlayerNum: 2}
+			g = &game.Game{PlayerNum: 2}
 		}
 	}
 	

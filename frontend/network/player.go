@@ -26,7 +26,7 @@ func NewPlayer(str string)(*Player, error){
 	p := &Player{mutex: sync.RWMutex{}, Coords: &Coordinates{mutex: sync.RWMutex{}}}
 	result := strings.Split(str, ",")
 	if len(result) != 5{
-		errors.New("Invalid string provided")
+		return nil, errors.New("Invalid string provided")
 	}
 	p.Coords.X, err = strconv.Atoi(result[0])
 	if err != nil {

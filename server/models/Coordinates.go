@@ -16,7 +16,6 @@ type Coordinates struct{
 //Update decodes the string and updates the coords
 func (c *Coordinates)Update(str string)error{
 	var err error
-	fmt.Println("Read Coords, ", str)
 	result := strings.Split(str, ",")
 	if len(result) != 2 {
 		return errors.New("Invalid string")
