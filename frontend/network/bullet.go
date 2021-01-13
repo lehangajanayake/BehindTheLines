@@ -1,4 +1,4 @@
-package models
+package network
 
 //Bullet model (kinda useless)
 type Bullet struct{

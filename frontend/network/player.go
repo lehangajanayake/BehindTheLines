@@ -1,50 +1,85 @@
 package network
 
 import (
-	//"errors"
-	"fmt"
-	//"log"
+	"errors"
+	"net"
 	"strconv"
 	"strings"
-	//"sync"
+	"sync"
+
 )
 
-//Player is the network equivalent of the games player
-type Player struct {
-	ID, X, Y int
-	Pos Coordinates
+//Player model
+type Player struct{
+	mutex sync.RWMutex
+	BulletsLeft int
 	FacingFront, Guard bool
+	Animation string
+	Coords *Coordinates
+	Conn *net.TCPConn
+	errchan chan error
 }
 
-//String returns the string value containing player data
-func (p *Player) String()string{
-	return fmt.Sprintf("%v,%v,%v,%v,%v", p.ID, p.X, p.Y, p.FacingFront, p.Guard)
-}
-
-//Decode decodes the player data from a string
-func (p *Player) Decode(str string) error{
+//NewPlayer decodes a the string and  a new player
+func NewPlayer(str string)(*Player, error){
 	var err error
-	//log.Println(str)
+	p := &Player{mutex: sync.RWMutex{}, Coords: &Coordinates{mutex: sync.RWMutex{}}}
 	result := strings.Split(str, ",")
-	p.ID, err = strconv.Atoi(result[0])
-	if err != nil {
-		return err
+	if len(result) != 5{
+		errors.New("Invalid string provided")
 	}
-	p.X, err = strconv.Atoi(result[1])
+	p.Coords.X, err = strconv.Atoi(result[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
-	p.Y , err = strconv.Atoi(result[2])
+	p.Coords.Y, err = strconv.Atoi(result[1])
 	if err != nil {
-		return err
+		return nil, err
+	}
+	if result[2] == "true"{
+		p.FacingFront = true
+	}else{
+		p.FacingFront = false
 	}
 	if result[3] == "true"{
-		p.FacingFront = true
-	} 
-	p.FacingFront = false
-	if result[4] == "true"{
 		p.Guard = true
+	}else{
+		p.Guard = false
 	}
-	p.Guard = false
+	p.Animation = result[4]
+	p.BulletsLeft, err = strconv.Atoi(result[5])
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+	
+}
+
+//UpdatePlayerFacingFront updates the facing of the player using a str
+func (p *Player) UpdatePlayerFacingFront(str string)error{
+	b, err := strconv.ParseBool(str) 
+	if err != nil {
+		return err
+	}
+	p.mutex.RLock()
+	defer p.mutex.Unlock()
+	if b{
+		p.FacingFront = true
+	}else{
+		p.FacingFront = false
+	}
 	return nil
+}
+
+//UpdatePlayerAnimation updates the animation type using a string 
+func (p *Player) UpdatePlayerAnimation(str string)error{
+	switch str{
+	case "Idle", "Walking", "Shooting":
+		p.mutex.RLock()
+		defer p.mutex.Unlock()
+		p.Animation = str
+		return nil
+	default:
+		return errors.New("Invalid String: " + str)
+	}
 }

@@ -5,7 +5,6 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/lehangajanayake/MissionImposible/frontend/network"
 )
 
 //Player model player
@@ -16,7 +15,6 @@ type Player struct{
 	Op *ebiten.DrawImageOptions
 	Gun  Gun
 	WalkingAnimation, IdleAnimation, ShootingAnimation Animation
-	Network network.Player
 }
 
 //Render reders a plyer in the screen
