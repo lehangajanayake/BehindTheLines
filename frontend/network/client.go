@@ -1,9 +1,9 @@
 package network
 
 import (
-        "net"
-        "log"
-        "bufio"
+	"bufio"
+	"log"
+	"net"
 )
 
 //Client model
@@ -26,7 +26,7 @@ func Connect(addr string, port string)(*Client, error){
         }
         return &Client{
                 Conn: conn,
-                Players: make(map[byte]*Player, 1),
+                Players: make(map[byte]*Player),
                 InitialWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
         }, nil
 }
@@ -47,17 +47,17 @@ func (c *Client) Read(){
 		if err != nil {
 			log.Println("Error receiving data from the client,", c.Conn.RemoteAddr().String(), ": ", err)
 			return
-		}
+                }
 		switch rune(str[0]){
                 case newPlayer:
                         println("newPlayer")
-                        str = str[1:len(str)-1] //trim the suffix and the prefix
-                        c.Players[str[0]], err = NewPlayer(str[1:])
+                        c.Players[str[1]], err = NewPlayer(str[2:len(str)-1])
                         if err != nil {
                                 log.Println("Error creating a newPlayer: ", err)
                         }
-		case updatePlayerCoords:
-                        err := c.Players[str[0]].Coords.Update(str[1:])
+
+                case updatePlayerCoords:
+                        err := c.Players[str[1]].Coords.Update(str[2:len(str)-1])
                         if err != nil {
                                 log.Println("Error updating the player coords, ", err)
                         }
@@ -70,6 +70,8 @@ func (c *Client) Read(){
                         if err != nil {
                                 log.Println("Error updating the player facing, ", err)
                         }
+                default:
+                        log.Println("Unknown data packet received")
 		}
 	}
 }

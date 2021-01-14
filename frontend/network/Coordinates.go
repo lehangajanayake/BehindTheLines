@@ -23,7 +23,7 @@ func (c *Coordinates)Update(str string)error{
 		return errors.New("Invalid string")
 	}
 	c.mutex.RLock()
-	defer c.mutex.Unlock()
+	defer c.mutex.RUnlock()
 	c.X, err = strconv.Atoi(result[0])
 	if err != nil {
 		return nil

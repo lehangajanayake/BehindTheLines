@@ -20,28 +20,17 @@ type Game struct{
 //AddPlayer Adds a Player to the game 
 //returns true if enough players are in the game
 func (g *Game) AddPlayer(conn *net.TCPConn)bool{
-	if len(g.Players) == g.PlayerNum  - 1{
+	if len(g.Players) == g.PlayerNum  {
 		return true
 	}
-	p := &models.Player{
-		ID: len(g.Players) + 1,
-		Coords: &models.Coordinates{
-			X: 100,
-			Y: 200,
-		},
-		FacingFront: true,
-		Guard: false,
-		Conn: conn,
-		NewPlayerRead: make(chan string), UpdatePlayerCoordsRead: make(chan string), UpdatePlayerAnimationRead: make(chan string), UpdatePlayerFacingRead: make(chan string),
-		NewPlayerWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
-		Errchan: make(chan error),
-	}
-	go p.Read()
-	for _, otherP := range g.Players{
-		println("Sending new player")
-		otherP.NewPlayerWrite <- p.String()
-	}
+	p := models.NewPlayer(len(g.Players), 100, 200, 60 , true, true, conn)
 	g.Players = append(g.Players, p)
+	log.Println(g.Players)
+	go p.Read()
+	go p.Write()
+	if len(g.Players) == g.PlayerNum {
+		return true
+	} 
 	return false
 
 }
@@ -49,7 +38,18 @@ func (g *Game) AddPlayer(conn *net.TCPConn)bool{
 //Run starts the game and runs the game returns an error if the game fails to run
 func (g *Game) Run(){
 	var wg sync.WaitGroup
+	done := make(chan bool)
+	for _, p := range g.Players{
+		for _, otherP := range g.Players{
+			if p.ID == otherP.ID{
+				continue
+			}
+			println("hello")
+			otherP.NewPlayerWrite <- p.String()
+		}
+	}
 	for {
+		
 		for _, v := range g.Players {
 			wg.Add(1)
 			go func(v *models.Player, wg *sync.WaitGroup) {
@@ -60,19 +60,34 @@ func (g *Game) Run(){
 				case str = <- v.UpdatePlayerCoordsRead:
 					err = v.Coords.Update(str)
 					if err != nil {
-						log.Fatal("Error decoding the Player Coords: ", err)
+						log.Println("Error decoding the Player Coords: ", err)
+						return
 					}
 					for _, p := range g.Players{
-						log.Println("Sending the coord to the other players")
+						if v.ID == p.ID {
+							continue
+						}
 						p.UpdatePlayerCoordsWrite <- v.Coords.String()
 					}
 				case err = <- v.Errchan:
 					log.Println("Error getting data: ", err)
+					done <- true
+					return
 				default:	
 					return
 				}
 			}(v, &wg)
 			wg.Wait()
+			select{
+			case <-done:
+				for _, p := range g.Players{
+					p.Close()
+				}
+				close(done)
+				break
+			default:
+				continue
+			}
 		}
 	}
 	

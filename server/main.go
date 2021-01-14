@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/lehangajanayake/BehindTheLine/Server/game"
+	"github.com/lehangajanayake/BehindTheLine/Server/models"
 )
 
 
@@ -14,7 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error resolving the udp addr: ", err)
 	}
-	g := &game.Game{PlayerNum: 2}
+	g := &game.Game{PlayerNum: 2, Players: make([]*models.Player, 0)}
 	for {
 		conn, err := listener.AcceptTCP()
 		log.Println("Incoming connection, ", conn.RemoteAddr().String())

@@ -25,8 +25,8 @@ func NewPlayer(str string)(*Player, error){
 	var err error
 	p := &Player{mutex: sync.RWMutex{}, Coords: &Coordinates{mutex: sync.RWMutex{}}}
 	result := strings.Split(str, ",")
-	if len(result) != 5{
-		return nil, errors.New("Invalid string provided")
+	if len(result) != 6{
+		return nil, errors.New("Invalid string provided: " + str)
 	}
 	p.Coords.X, err = strconv.Atoi(result[0])
 	if err != nil {
@@ -62,7 +62,7 @@ func (p *Player) UpdatePlayerFacingFront(str string)error{
 		return err
 	}
 	p.mutex.RLock()
-	defer p.mutex.Unlock()
+	defer p.mutex.RUnlock()
 	if b{
 		p.FacingFront = true
 	}else{
