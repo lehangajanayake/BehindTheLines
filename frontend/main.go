@@ -39,9 +39,8 @@ type Game struct{
 func (g *Game) Update()error{
 	g.Player.LastAnimation = g.Player.IdleAnimation.Name
 	g.Camera.Zoom = 1
+	g.Player.IdleAnimation.Animate, g.Player.WalkingAnimation.Animate, g.Player.ShootingAnimation.Animate = false, false, false
 	g.Camera.Move(models.Coordinates{X: g.ScreenWidth /2, Y:g.ScreenHeight/2})
-	g.Player.IdleAnimation.Reset()
-	g.Player.WalkingAnimation.Reset()
 	
 	if g.Player.IsShooting(){
 		g.Player.Shoot()
@@ -121,8 +120,6 @@ func (g *Game) Update()error{
 				g.Player.LastAnimation = g.Player.ShootingAnimation.Name
 				g.Client.UpdatePlayerAnimationWrite <- g.Player.ShootingAnimation.Name
 			}
-	default:
-		println("hello")
 	}
 	
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
@@ -173,7 +170,7 @@ func (g *Game) Draw(screen *ebiten.Image){
 		f := (g.Player.WalkingAnimation.CurrentFrame / 10 ) % g.Player.WalkingAnimation.FrameNum
 		x, y := g.Player.WalkingAnimation.FrameWidth*f, g.Player.WalkingAnimation.StartY
 		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
-		if g.Player.WalkingAnimation.CurrentFrame == g.Player.WalkingAnimation.FrameNum*10{ //done shooting
+		if g.Player.WalkingAnimation.CurrentFrame == g.Player.WalkingAnimation.FrameNum*10 || !g.Player.IsWalking(){ //done shooting
 			g.Player.WalkingAnimation.Reset()
 		}
 
@@ -182,7 +179,7 @@ func (g *Game) Draw(screen *ebiten.Image){
 		f := (g.Player.IdleAnimation.CurrentFrame / 20) % g.Player.IdleAnimation.FrameNum
 		x, y := g.Player.IdleAnimation.FrameWidth*f, g.Player.IdleAnimation.StartY
 		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
-		if g.Player.IdleAnimation.CurrentFrame == g.Player.IdleAnimation.FrameNum*20{ //done shooting
+		if g.Player.IdleAnimation.CurrentFrame == g.Player.IdleAnimation.FrameNum*20 || !g.Player.IsIdle(){ //done ideling
 			g.Player.IdleAnimation.Reset()
 		}
 
