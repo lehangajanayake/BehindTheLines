@@ -49,30 +49,16 @@ func (g *Game) Update()error{
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		if ebiten.IsKeyPressed(ebiten.KeyShift) && !(ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyS)){
-			g.Player.Run("F")
-		}else{
-			g.Player.Walk("F")
-		}
+		g.Player.Walk("F")
 	}else if ebiten.IsKeyPressed(ebiten.KeyA) {
-		if ebiten.IsKeyPressed(ebiten.KeyShift) && !(ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyS)){
-			g.Player.Run("B")
-		}else{
 			g.Player.Walk("B")
-		}	
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyW){
-		if ebiten.IsKeyPressed(ebiten.KeyShift) && !(ebiten.IsKeyPressed(ebiten.KeyA) || ebiten.IsKeyPressed(ebiten.KeyD)){
-			g.Player.Run("U")
-		}else{
 			g.Player.Walk("U")
-		}	
+		
 	}else if ebiten.IsKeyPressed(ebiten.KeyS) {
-		if ebiten.IsKeyPressed(ebiten.KeyShift) && !(ebiten.IsKeyPressed(ebiten.KeyA) || ebiten.IsKeyPressed(ebiten.KeyD)){
-			g.Player.Run("D")
-		}else{
 			g.Player.Walk("D")
-		}	
+		
 	}
 	collide := make(chan bool, len(g.Map.TransparentObstacles) + len(g.Map.RayObjects))
 	var wg sync.WaitGroup
@@ -183,22 +169,31 @@ func (g *Game) Draw(screen *ebiten.Image){
 	g.Player.Op.GeoM.Translate(float64(g.Player.Coords.X),float64(g.Player.Coords.Y))
 	
 	if g.Player.IsWalking(){
+		g.Player.WalkingAnimation.CurrentFrame++
 		f := (g.Player.WalkingAnimation.CurrentFrame / 10 ) % g.Player.WalkingAnimation.FrameNum
 		x, y := g.Player.WalkingAnimation.FrameWidth*f, g.Player.WalkingAnimation.StartY
 		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
+		if g.Player.WalkingAnimation.CurrentFrame == g.Player.WalkingAnimation.FrameNum*10{ //done shooting
+			g.Player.WalkingAnimation.Reset()
+		}
+
 	}else if g.Player.IsIdle(){
+		g.Player.IdleAnimation.CurrentFrame++
 		f := (g.Player.IdleAnimation.CurrentFrame / 20) % g.Player.IdleAnimation.FrameNum
 		x, y := g.Player.IdleAnimation.FrameWidth*f, g.Player.IdleAnimation.StartY
 		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
-		
+		if g.Player.IdleAnimation.CurrentFrame == g.Player.IdleAnimation.FrameNum*20{ //done shooting
+			g.Player.IdleAnimation.Reset()
+		}
+
 	}else if g.Player.IsShooting(){
+		g.Player.IdleAnimation.CurrentFrame++
 		f := (g.Player.ShootingAnimation.CurrentFrame / 3) % g.Player.ShootingAnimation.FrameNum
 		x, y := g.Player.ShootingAnimation.FrameWidth*f, g.Player.ShootingAnimation.StartY
 		g.Player.Render(g.Camera.View, g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image))
 		
 		if g.Player.ShootingAnimation.CurrentFrame == g.Player.ShootingAnimation.FrameNum*3{ //done shooting
 			g.Player.ShootingAnimation.Reset()
-			g.Player.ShootingAnimation.CurrentFrame = 1
 			g.Player.Gun.Shoot()
 		}
 	}

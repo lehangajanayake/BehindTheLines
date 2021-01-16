@@ -43,55 +43,50 @@ func (p *Player) Walk(direction string){
 	switch direction{
 	case "F": //Forward
 		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame ++
 		p.Coords.X ++
 		p.FacingFront = true
 	case "B": //Backword
 		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame ++
 		p.Coords.X --
 		p.FacingFront = false	
 	case "U": //Up
 		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame ++
 		p.Coords.Y --
 	case "D": //Down
 		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame ++
 		p.Coords.Y ++ 
 	}
 	
 }
 
 //Run make the player run
-func (p *Player) Run(direction string){
-	switch direction{
-	case "F": //Forward
-		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame +=2
-		p.Coords.X +=2
-		p.FacingFront = true
-	case "B": //Backword
-		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame +=2
-		p.Coords.X -=2
-		p.FacingFront = false	
-	case "U": //Up
-		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame += 2
-		p.Coords.Y -=2
-	case "D": //Down
-		p.WalkingAnimation.Animate = true
-		p.WalkingAnimation.CurrentFrame += 2
-		p.Coords.Y +=2 
-	}
+// func (p *Player) Run(direction string){
+// 	switch direction{
+// 	case "F": //Forward
+// 		p.WalkingAnimation.Animate = true
+// 		p.WalkingAnimation.CurrentFrame  +=2
+// 		p.Coords.X +=2
+// 		p.FacingFront = true
+// 	case "B": //Backword
+// 		p.WalkingAnimation.Animate = true
+// 		p.WalkingAnimation.CurrentFrame +=2
+// 		p.Coords.X -=2
+// 		p.FacingFront = false	
+// 	case "U": //Up
+// 		p.WalkingAnimation.Animate = true
+// 		p.WalkingAnimation.CurrentFrame += 2
+// 		p.Coords.Y -=2
+// 	case "D": //Down
+// 		p.WalkingAnimation.Animate = true
+// 		p.WalkingAnimation.CurrentFrame += 2
+// 		p.Coords.Y +=2 
+// 	}
 	
-}
+// }
 
 //Shoot shoots a bullet
 func (p *Player) Shoot(){
 	p.ShootingAnimation.Animate = true
-	p.ShootingAnimation.CurrentFrame ++
 	//p.Gun.Shoot()
 	
 }
