@@ -43,18 +43,18 @@ func (p *Player) Walk(direction string){
 	switch direction{
 	case "F": //Forward
 		p.WalkingAnimation.Animate = true
-		p.Coords.X ++
+		p.Coords.X += 2
 		p.FacingFront = true
 	case "B": //Backword
 		p.WalkingAnimation.Animate = true
-		p.Coords.X --
+		p.Coords.X -= 2
 		p.FacingFront = false	
 	case "U": //Up
 		p.WalkingAnimation.Animate = true
-		p.Coords.Y --
+		p.Coords.Y -= 2
 	case "D": //Down
 		p.WalkingAnimation.Animate = true
-		p.Coords.Y ++ 
+		p.Coords.Y += 2
 	}
 	
 }
