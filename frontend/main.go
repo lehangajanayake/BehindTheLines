@@ -37,6 +37,7 @@ type Game struct{
 
 //Update updates  the game 
 func (g *Game) Update()error{
+	g.Player.LastAnimation = g.Player.IdleAnimation.Name
 	g.Camera.Zoom = 1
 	g.Camera.Move(models.Coordinates{X: g.ScreenWidth /2, Y:g.ScreenHeight/2})
 	g.Player.IdleAnimation.Reset()
@@ -73,7 +74,7 @@ func (g *Game) Update()error{
 			g.Player.Walk("D")
 		}	
 	}
-	collide := make(chan bool)
+	collide := make(chan bool, len(g.Map.TransparentObstacles) + len(g.Map.RayObjects))
 	var wg sync.WaitGroup
 	for _, obj := range g.Map.TransparentObstacles{
 		wg.Add(1)
@@ -100,26 +101,42 @@ func (g *Game) Update()error{
 		}(obj, &wg)
 		
 	}
-	done := make(chan bool)
-	
-	go func(done chan bool) {
-		for v := range collide{
-			if v {
-				g.Player.Coords = g.Player.LastPos
-			}
-		}
-		done <- true
-	}(done)
-	
 	wg.Wait()
 	close(collide)
-	<-done
+	
+	for v := range collide{
+		if v {
+			g.Player.Coords = g.Player.LastPos
+			break
+		}
+	}
+		
 	
 	
 	if g.Player.LastPos != g.Player.Coords{
 		coords := &network.Coordinates{X: g.Player.Coords.X, Y: g.Player.Coords.Y}
 		g.Client.UpdatePlayerCoordsWrite <- coords.String()
 		g.Player.LastPos = g.Player.Coords
+	}
+
+	switch g.Player.LastAnimation{
+	case g.Player.IdleAnimation.Name:
+		if !g.Player.IdleAnimation.Animate{
+			g.Player.LastAnimation = g.Player.IdleAnimation.Name
+			g.Client.UpdatePlayerAnimationWrite <- g.Player.IdleAnimation.Name
+		}
+	case g.Player.WalkingAnimation.Name:
+		if !g.Player.WalkingAnimation.Animate{
+			g.Player.LastAnimation = g.Player.WalkingAnimation.Name
+			g.Client.UpdatePlayerAnimationWrite <- g.Player.WalkingAnimation.Name
+		}
+	case g.Player.ShootingAnimation.Name:
+			if !g.Player.ShootingAnimation.Animate{
+				g.Player.LastAnimation = g.Player.ShootingAnimation.Name
+				g.Client.UpdatePlayerAnimationWrite <- g.Player.ShootingAnimation.Name
+			}
+	default:
+		println("hello")
 	}
 	
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft){
@@ -153,11 +170,8 @@ func (g *Game) Update()error{
 }
 // Draw draws to the screen every update
 func (g *Game) Draw(screen *ebiten.Image){
-	
-	
 
 	g.Camera.View.DrawImage(g.Map.World, g.Map.Op)
-	
 	
 	g.Player.Op.GeoM.Reset()
 	g.Player.Op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
@@ -188,7 +202,8 @@ func (g *Game) Draw(screen *ebiten.Image){
 			g.Player.Gun.Shoot()
 		}
 	}
-	for _, v := range g.Client.Players{
+	for _, v := range g.Client.Players{ 
+		v.CurrentFrame++
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(-float64(g.Player.WalkingAnimation.FrameWidth/2), -float64(g.Player.WalkingAnimation.FrameHeight/2)) //,ake the axis of the player in teh middle instead of the upper left conner
 		if v.FacingFront{
@@ -197,8 +212,21 @@ func (g *Game) Draw(screen *ebiten.Image){
 			op.GeoM.Scale(-0.5,0.5)
 		}
 		op.GeoM.Translate(float64(v.Coords.X), float64(v.Coords.Y))
-
-		g.Camera.View.DrawImage(g.Player.Img.SubImage(image.Rect(0, 0, g.Player.WalkingAnimation.FrameWidth,g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image), op)
+		switch v.Animation{
+		case g.Player.IdleAnimation.Name:
+			f := (v.CurrentFrame / 20) % g.Player.IdleAnimation.FrameNum
+			x, y := g.Player.IdleAnimation.FrameWidth*f, g.Player.IdleAnimation.StartY
+			g.Camera.View.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.IdleAnimation.FrameWidth, y + g.Player.IdleAnimation.FrameHeight)).(*ebiten.Image), op)
+		case g.Player.WalkingAnimation.Name:
+			f := (v.CurrentFrame / 10) % g.Player.WalkingAnimation.FrameNum
+			x, y := g.Player.WalkingAnimation.FrameWidth*f, g.Player.WalkingAnimation.StartY
+			g.Camera.View.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.WalkingAnimation.FrameWidth, y + g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image), op)
+		case g.Player.ShootingAnimation.Name:
+			f := (v.CurrentFrame / 3) % g.Player.ShootingAnimation.FrameNum
+			x, y := g.Player.ShootingAnimation.FrameWidth*f, g.Player.ShootingAnimation.StartY
+			g.Camera.View.DrawImage(g.Player.Img.SubImage(image.Rect(x, y, x + g.Player.ShootingAnimation.FrameWidth, y + g.Player.ShootingAnimation.FrameHeight)).(*ebiten.Image), op)
+		}
+		//g.Camera.View.DrawImage(g.Player.Img.SubImage(image.Rect(0, 0, g.Player.WalkingAnimation.FrameWidth,g.Player.WalkingAnimation.FrameHeight)).(*ebiten.Image), op)
 	}
 	
 	if len(g.Bullets) != 0{
@@ -250,6 +278,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int)(int, int){
 
 func main(){
 	//runtime.GOMAXPROCS(1)
+	log.SetFlags(log.Ltime | log.Lshortfile)
 	player,_, err := ebitenutil.NewImageFromFile("assets/hero_spritesheet.png")
 	if err != nil {
 		log.Fatalf("Cannot load the assets err : %v", err)
@@ -272,6 +301,7 @@ func main(){
 				Y: h/2,
 			},
 			WalkingAnimation: models.Animation{
+				Name: "Walking",
 				StartX: 0,
 				StartY: 100,
 				FrameNum: 6	,
@@ -280,6 +310,7 @@ func main(){
 				Animate: false,
 			},
 			IdleAnimation: models.Animation{
+				Name: "Idle",
 				StartX: 0,
 				StartY: 0,
 				FrameNum: 1,
@@ -289,6 +320,7 @@ func main(){
 
 			},
 			ShootingAnimation: models.Animation{
+				Name: "Shooting",
 				StartX: 0,
 				StartY: 0,
 				FrameNum: 8,
@@ -314,7 +346,6 @@ func main(){
 			},
 			Op: &ebiten.GeoM{},
 		},
-		Client: new(network.Client),
 	}
 	err = g.Map.LoadMap("assets/Map/Map1.tmx")
 	if err != nil {
@@ -327,7 +358,7 @@ func main(){
 	g.ShadowImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg.Fill(color.White)
-	g.Client, err = network.Connect("localhost", "8080")
+	g.Client, err = network.Connect("192.168.1.7", "8080")
 	if err != nil {
 		log.Fatal("Error connecting to the server", err)
 	}

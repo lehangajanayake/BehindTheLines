@@ -7,6 +7,7 @@ type Coordinates struct{
 
 //Animation model for animation
 type Animation struct{
+	Name string
 	Animate bool
 	FrameNum, CurrentFrame, FrameHeight, FrameWidth, StartX, StartY int
 }

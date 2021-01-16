@@ -13,6 +13,7 @@ import (
 type Player struct{
 	mutex sync.RWMutex
 	BulletsLeft int
+	CurrentFrame int
 	FacingFront, Guard bool
 	Animation string
 	Coords *Coordinates
@@ -76,7 +77,7 @@ func (p *Player) UpdatePlayerAnimation(str string)error{
 	switch str{
 	case "Idle", "Walking", "Shooting":
 		p.mutex.RLock()
-		defer p.mutex.Unlock()
+		defer p.mutex.RUnlock()
 		p.Animation = str
 		return nil
 	default:

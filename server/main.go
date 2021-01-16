@@ -11,9 +11,10 @@ import (
 
 func main() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	listener, err := startServer("0.0.0.0", "8080")
+	listener, err := startServer("", "8080")
+	log.Println("Starting the server")
 	if err != nil {
-		log.Fatal("Error resolving the udp addr: ", err)
+		log.Fatal("Error startign the server: ", err)
 	}
 	g := &game.Game{PlayerNum: 2, Players: make([]*models.Player, 0)}
 	for {
@@ -37,7 +38,6 @@ func startServer(addr string, port string)(*net.TCPListener, error){
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Starting the Server, ", TCPaddr)
 	return net.ListenTCP("tcp", TCPaddr)
 	
 }

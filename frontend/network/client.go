@@ -59,11 +59,14 @@ func (c *Client) Read(){
                 case updatePlayerCoords:
                         err := c.Players[str[1]].Coords.Update(str[2:len(str)-1])
                         if err != nil {
-                                log.Println("Error updating the player coords, ", err)
+                                log.Println("Error updating the player coords, ", err, " ", str[2:len(str)-1])
                         }
 		case updatePlayerAnimation:
 			str = str[1:len(str)-1] //trim the suffix and the prefix
-			c.Players[str[0]].Animation = str[1:]
+                        err = c.Players[str[0]].UpdatePlayerAnimation(str[1:])
+                        if err != nil {
+                                log.Println("Error decdong the player animation")
+                        }
 		case updatePlayerFacing:
 			str = str[1:len(str)-1] //trim the suffix and the prefix
                         err = c.Players[str[0]].UpdatePlayerFacingFront(str[1:])
@@ -82,6 +85,12 @@ func (c *Client) Write(){
 		select{
                 case str = <- c.UpdatePlayerCoordsWrite:
 			data := string(updatePlayerCoords) + str + "\n"
+			n, err := c.Conn.Write([]byte(data))
+			if err != nil || n != len(data) {
+				log.Println("Error sending data to the server", err) 
+                        }
+                case str = <- c.UpdatePlayerAnimationWrite:
+			data := string(updatePlayerAnimation) + str + "\n"
 			n, err := c.Conn.Write([]byte(data))
 			if err != nil || n != len(data) {
 				log.Println("Error sending data to the server", err) 

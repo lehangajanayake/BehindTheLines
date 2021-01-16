@@ -69,6 +69,15 @@ func (g *Game) Run(){
 						}
 						p.UpdatePlayerCoordsWrite <- v.Coords.String()
 					}
+				case str = <- v.UpdatePlayerAnimationRead:
+					v.Animation = str
+					for _, p := range g.Players{
+						if v.ID == p.ID {
+							continue
+						}
+						p.UpdatePlayerAnimationWrite <- str
+					}
+
 				case err = <- v.Errchan:
 					log.Println("Error getting data: ", err)
 					done <- true
