@@ -11,18 +11,17 @@ import (
 
 //Map model map
 type Map struct {
-	tile *tiled.Map
-	Op *ebiten.DrawImageOptions
-	World *ebiten.Image
-	Trees *ebiten.Image
+	tile                 *tiled.Map
+	Op                   *ebiten.DrawImageOptions
+	World                *ebiten.Image
+	Trees                *ebiten.Image
 	TransparentObstacles []*tiled.Object
-	BlindSpots []*tiled.Object
-	RayObjects []*tiled.Object
+	BlindSpots           []*tiled.Object
+	RayObjects           []*tiled.Object
 }
 
-
 //LoadMap loads the map
-func (m *Map) LoadMap(path string)error{
+func (m *Map) LoadMap(path string) error {
 	var err error
 	m.tile, err = tiled.LoadFromFile(path)
 	if err != nil {
@@ -32,7 +31,7 @@ func (m *Map) LoadMap(path string)error{
 	var buff []byte
 	buffer := bytes.NewBuffer(buff)
 	err = render1.RenderLayer(0)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	err = render1.RenderLayer(2)
@@ -44,7 +43,7 @@ func (m *Map) LoadMap(path string)error{
 		return err
 	}
 	err = render1.SaveAsPng(buffer)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	img, err := png.Decode(buffer)
@@ -59,7 +58,7 @@ func (m *Map) LoadMap(path string)error{
 		return err
 	}
 	err = render2.SaveAsPng(buffer)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	img, err = png.Decode(buffer)
@@ -71,17 +70,17 @@ func (m *Map) LoadMap(path string)error{
 }
 
 //LoadTransparentObstacles loads the TransparentObstacles
-func (m *Map) LoadTransparentObstacles(){
+func (m *Map) LoadTransparentObstacles() {
 	m.TransparentObstacles = m.tile.ObjectGroups[0].Objects
-	
+
 }
 
 //LoadBlindSpots loads all the blind spots in the map
-func (m *Map) LoadBlindSpots(){
+func (m *Map) LoadBlindSpots() {
 	m.BlindSpots = m.tile.ObjectGroups[1].Objects
 }
 
 //LoadRayObjects loads all the blind spots in the map
-func (m *Map) LoadRayObjects(){
+func (m *Map) LoadRayObjects() {
 	m.RayObjects = m.tile.ObjectGroups[2].Objects
 }

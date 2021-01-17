@@ -9,14 +9,13 @@ import (
 )
 
 //Coordinates hold a value of x, y of teh player
-type Coordinates struct{
+type Coordinates struct {
 	mutex sync.RWMutex
-	X, Y int
+	X, Y  int
 }
 
-
 //Update decodes the string and updates the coords
-func (c *Coordinates)Update(str string)error{
+func (c *Coordinates) Update(str string) error {
 	var err error
 	result := strings.Split(str, ",")
 	if len(result) != 2 {
@@ -36,6 +35,6 @@ func (c *Coordinates)Update(str string)error{
 }
 
 //String returns the string value of coords
-func (c *Coordinates)String()string{
+func (c *Coordinates) String() string {
 	return fmt.Sprintf("%d,%d", c.X, c.Y)
 }

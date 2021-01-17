@@ -128,6 +128,7 @@ func Cast(cx, cy float64, Objects []Object) []Line {
 	})
 	return rays
 }
+
 //Vertices returns the vertices
 func Vertices(x1, y1, x2, y2, x3, y3 float64) []ebiten.Vertex {
 	return []ebiten.Vertex{

@@ -5,26 +5,26 @@ import (
 )
 
 //Camera is the model camera
-type Camera struct{
-	Op *ebiten.GeoM
-	Zoom float64
+type Camera struct {
+	Op       *ebiten.GeoM
+	Zoom     float64
 	Position Coordinates
-	View *ebiten.Image
+	View     *ebiten.Image
 }
 
 //Move moves the camera
-func (c *Camera) Move(pos Coordinates){
+func (c *Camera) Move(pos Coordinates) {
 	c.Position = pos
 }
 
 //Render reders the camera
-func (c *Camera) Render(screen *ebiten.Image){
+func (c *Camera) Render(screen *ebiten.Image) {
 	c.Op.Reset()
 	w, h := ebiten.ScreenSizeInFullscreen()
 	c.Op.Translate(-float64(w/2), -float64(h/2))
 	c.Op.Scale(c.Zoom, c.Zoom)
 	c.Op.Translate(float64(c.Position.X), float64(c.Position.Y))
-	if c.Op.IsInvertible(){
+	if c.Op.IsInvertible() {
 		c.Op.Invert()
 	}
 	screen.DrawImage(c.View, &ebiten.DrawImageOptions{
