@@ -37,7 +37,7 @@ type Game struct{
 
 //Update updates  the game 
 func (g *Game) Update()error{
-	g.Player.LastAnimation = g.Player.IdleAnimation.Name
+	
 	g.Camera.Zoom = 1
 	g.Player.IdleAnimation.Animate, g.Player.WalkingAnimation.Animate, g.Player.ShootingAnimation.Animate = false, false, false
 	g.Camera.Move(models.Coordinates{X: g.ScreenWidth /2, Y:g.ScreenHeight/2})
@@ -102,6 +102,16 @@ func (g *Game) Update()error{
 		coords := &network.Coordinates{X: g.Player.Coords.X, Y: g.Player.Coords.Y}
 		g.Client.UpdatePlayerCoordsWrite <- coords.String()
 		g.Player.LastPos = g.Player.Coords
+	}
+	
+	if g.Player.LastFacing != g.Player.FacingFront{
+		g.Player.LastFacing = g.Player.FacingFront
+		if g.Player.FacingFront{
+			g.Client.UpdatePlayerFacingWrite <- "true"
+		}else{
+			g.Client.UpdatePlayerFacingWrite <- "false"
+		}
+		
 	}
 
 	switch g.Player.LastAnimation{

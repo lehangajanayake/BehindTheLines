@@ -50,7 +50,7 @@ func (c *Client) Read(){
                 }
 		switch rune(str[0]){
                 case newPlayer:
-                        println("newPlayer")
+                        log.Println("newPlayer")
                         c.Players[str[1]], err = NewPlayer(str[2:len(str)-1])
                         if err != nil {
                                 log.Println("Error creating a newPlayer: ", err)
@@ -84,17 +84,23 @@ func (c *Client) Write(){
 	for {
 		select{
                 case str = <- c.UpdatePlayerCoordsWrite:
-			data := string(updatePlayerCoords) + str + "\n"
-			n, err := c.Conn.Write([]byte(data))
-			if err != nil || n != len(data) {
+			str = string(updatePlayerCoords) + str + "\n"
+			n, err := c.Conn.Write([]byte(str))
+			if err != nil || n != len(str) {
 				log.Println("Error sending data to the server", err) 
                         }
                 case str = <- c.UpdatePlayerAnimationWrite:
-			data := string(updatePlayerAnimation) + str + "\n"
-			n, err := c.Conn.Write([]byte(data))
-			if err != nil || n != len(data) {
+			str = string(updatePlayerAnimation) + str + "\n"
+			n, err := c.Conn.Write([]byte(str))
+			if err != nil || n != len(str) {
 				log.Println("Error sending data to the server", err) 
-			}
+                        }
+                case str = <- c.UpdatePlayerFacingWrite:
+                        str = string(updatePlayerFacing) + str + "\n"
+                        n, err := c.Conn.Write([]byte(str))
+			if err != nil || n != len(str) {
+				log.Println("Error sending data to the server", err) 
+                        }
 		}
 	}
 }

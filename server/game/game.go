@@ -77,6 +77,19 @@ func (g *Game) Run(){
 						}
 						p.UpdatePlayerAnimationWrite <- str
 					}
+				case str = <- v.UpdatePlayerFacingRead:
+					switch str{
+					case "true":
+						v.FacingFront = true
+					case "false":
+						v.FacingFront = false
+					}
+					for _, p := range g.Players{
+						if v.ID == p.ID {
+							continue
+						}
+						p.UpdatePlayerFacingWrite <- str
+					}
 
 				case err = <- v.Errchan:
 					log.Println("Error getting data: ", err)
