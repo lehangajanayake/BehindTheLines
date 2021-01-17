@@ -62,11 +62,8 @@ func (g *Game) AddPlayer(conn *net.TCPConn) bool {
 	go p.Read()
 	go p.Write()
 	go func() {
-		log.Println("waiting to start")
 		<- g.started
-		log.Println("Started")
 		p.LobbyWrite <- p.String()
-		log.Println("send")
 		g.started <- true
 	}()
 	return len(g.Players) == g.PlayerNum

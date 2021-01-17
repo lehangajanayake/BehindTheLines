@@ -104,7 +104,6 @@ func (p *Player) Write() {
 		//p.Conn.SetWriteDeadline(time.Now().Add(time.Second *1))
 		select {
 		case str = <- p.LobbyWrite:
-			log.Println("hello2")
 			n, err := p.Conn.Write([]byte(string(lobby) + str + "\n"))
 			if err != nil {
 				p.Errchan <- err
