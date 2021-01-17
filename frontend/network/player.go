@@ -17,7 +17,6 @@ type Player struct {
 	Animation          string
 	Coords             *Coordinates
 	Conn               *net.TCPConn
-	errchan            chan error
 }
 
 //NewPlayer decodes a the string and  a new player
