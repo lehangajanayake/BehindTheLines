@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"log"
 	"net"
+
+	"github.com/lehangajanayake/MissionImposible/frontend/models"
 )
 
 //Client model
@@ -11,7 +13,7 @@ type Client struct {
 	Conn                                                                                       *net.TCPConn
 	Players                                                                                    map[byte]*Player
 	Bullets                                                                                    []Bullet
-	InitialWrite, UpdatePlayerCoordsWrite, UpdatePlayerAnimationWrite, UpdatePlayerFacingWrite chan string //Writeing chans
+        InitialRead, InitialWrite, UpdatePlayerCoordsWrite, UpdatePlayerAnimationWrite, UpdatePlayerFacingWrite chan string //Writeing chans
 }
 
 //Connect connects to the server and returns the Client
@@ -27,7 +29,7 @@ func Connect(addr string, port string) (*Client, error) {
 	return &Client{
 		Conn:         conn,
 		Players:      make(map[byte]*Player),
-		InitialWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
+                InitialRead: make(chan string), InitialWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
 	}, nil
 }
 
@@ -35,7 +37,8 @@ const (
 	newPlayer             = '0'
 	updatePlayerCoords    = '1'
 	updatePlayerAnimation = '2'
-	updatePlayerFacing    = '3'
+        updatePlayerFacing    = '3'
+        initPlayer = '4'
 )
 
 //Read reads form the player client and push the data to the rele vant chan of string
@@ -46,9 +49,11 @@ func (c *Client) Read() {
 		if err != nil {
 			log.Println("Error receiving data from the client,", c.Conn.RemoteAddr().String(), ": ", err)
 			return
-		}
+                }
 		switch rune(str[0]) {
-		case newPlayer:
+                case initPlayer:
+                        c.InitialRead <- str[1: len(str)-1]
+                case newPlayer:
 			log.Println("newPlayer")
 			c.Players[str[1]], err = NewPlayer(str[2 : len(str)-1])
 			if err != nil {
@@ -105,8 +110,21 @@ func (c *Client) Write() {
 }
 
 //Run runs the client forever
-func (c *Client) Run() {
+func (c *Client)Run(p *models.Player) ( error){
 	go c.Read()
-	go c.Write()
-
+        go c.Write()
+        log.Println("Waiting for other players to join")
+        str := <- c.InitialRead
+        result, err := NewPlayer(str)
+        if err != nil {
+                return err
+        }
+        p.Coords.X = result.Coords.X
+        p.Coords.Y = result.Coords.Y
+        p.FacingFront = result.FacingFront
+        p.Guard = result.Guard
+        p.Gun.Bullets = result.BulletsLeft
+        close(c.InitialRead)
+        log.Println(p, str)
+        return nil
 }

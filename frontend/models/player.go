@@ -11,7 +11,7 @@ import (
 type Player struct {
 	Img                                                *ebiten.Image
 	Coords, LastPos                                    Coordinates
-	FacingFront, LastFacing                            bool
+	FacingFront, LastFacing, Guard                     bool
 	LastAnimation                                      string
 	Op                                                 *ebiten.DrawImageOptions
 	Gun                                                Gun

@@ -118,11 +118,14 @@ func main() {
 	g.ShadowImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg = ebiten.NewImage(g.Map.World.Size())
 	g.TriangleImg.Fill(color.White)
-	g.Client, err = network.Connect("192.168.1.7", "8080")
+	g.Client, err = network.Connect("localhost", "8080")
 	if err != nil {
 		log.Fatal("Error connecting to the server", err)
 	}
-	g.Client.Run()
+	err = g.Client.Run(g.Player)
+	if err != nil {
+		log.Fatal("Error loadign the player from the server, ", err)
+	}
 	//g.Player.Coords = models.Coordinates{X: g.Player.Network.X, Y: g.Player.Network.Y}
 
 	//converting the tiled object layer to ray objects
