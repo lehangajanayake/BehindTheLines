@@ -10,14 +10,14 @@ import (
 
 //Player model player
 type Player struct {
-	Img                                                *ebiten.Image
-	Coords, LastPos                                    Coordinates
-	FacingFront, LastFacing, Guard                     bool
-	LastAnimation                                      string
-	Op                                                 *ebiten.DrawImageOptions
-	Gun                                                Gun
+	Img                            *ebiten.Image
+	Coords, LastPos                Coordinates
+	FacingFront, LastFacing, Guard bool
+	LastAnimation                  string
+	Op                             *ebiten.DrawImageOptions
+	Gun                            Gun
 	//Animations["Walking"], IdleAnimation, ShootingAnimation Animation
-	State string
+	State      string
 	Animations map[string]*Animation
 }
 
@@ -25,7 +25,6 @@ type Player struct {
 func (p *Player) Render(screen, img *ebiten.Image) {
 	screen.DrawImage(img, p.Op)
 }
-
 
 //Walk make the player walk
 func (p *Player) Walk(direction string) {
@@ -87,9 +86,8 @@ func (p *Player) String() string {
 	return fmt.Sprintf("X: %v, Y: %v, Front: %v", p.Coords.X, p.Coords.Y, p.FacingFront)
 }
 
-
-func (p *Player) Animate(can *ebiten.Image){
-	switch p.State{
+func (p *Player) Animate(can *ebiten.Image) {
+	switch p.State {
 	case "Idle":
 		if _, ok := p.Animations["Idle"]; !ok {
 			log.Fatal("Animation cant be found")
@@ -112,7 +110,7 @@ func (p *Player) Animate(can *ebiten.Image){
 		if p.Animations["Walking"].CurrentFrame == p.Animations["Walking"].FrameNum*10 { //done shooting
 			p.Animations["Walking"].Reset()
 		}
-		
+
 	case "Attacking":
 		if _, ok := p.Animations["Attacking"]; !ok {
 			log.Fatal("Animation cant be found")

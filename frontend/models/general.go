@@ -9,7 +9,7 @@ type Coordinates struct {
 
 //Animation model for animation
 type Animation struct {
-	Img *ebiten.Image
+	Img                                                             *ebiten.Image
 	Animate                                                         bool
 	FrameNum, CurrentFrame, FrameHeight, FrameWidth, StartX, StartY int
 }

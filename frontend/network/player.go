@@ -14,7 +14,7 @@ type Player struct {
 	BulletsLeft        int
 	CurrentFrame       int
 	FacingFront, Guard bool
-	Animation          string
+	State              string
 	Coords             *Coordinates
 	Conn               *net.TCPConn
 }
@@ -25,7 +25,7 @@ func NewPlayer(str string) (*Player, error) {
 	p := &Player{mutex: sync.RWMutex{}, Coords: &Coordinates{mutex: sync.RWMutex{}}}
 	result := strings.Split(str, ",")
 	if len(result) != 6 {
-		return nil, errors.New("Invalid string provided: " + str)
+		return nil, errors.New("Invalid string : " + str)
 	}
 	p.Coords.X, err = strconv.Atoi(result[0])
 	if err != nil {
@@ -45,7 +45,7 @@ func NewPlayer(str string) (*Player, error) {
 	} else {
 		p.Guard = false
 	}
-	p.Animation = result[4]
+	p.State = result[4]
 	p.BulletsLeft, err = strconv.Atoi(result[5])
 	if err != nil {
 		return nil, err
@@ -70,13 +70,13 @@ func (p *Player) UpdatePlayerFacingFront(str string) error {
 	return nil
 }
 
-//UpdatePlayerAnimation updates the animation type using a string
-func (p *Player) UpdatePlayerAnimation(str string) error {
+//UpdatePlayerState updates the animation type using a string
+func (p *Player) UpdatePlayerState(str string) error {
 	switch str {
 	case "Idle", "Walking", "Shooting":
 		p.mutex.RLock()
 		defer p.mutex.RUnlock()
-		p.Animation = str
+		p.State = str
 		return nil
 	default:
 		return errors.New("Invalid String: " + str)

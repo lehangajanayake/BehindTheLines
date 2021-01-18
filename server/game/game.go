@@ -111,13 +111,13 @@ func (g *Game) Run() {
 						}
 						p.UpdatePlayerCoordsWrite <- v.Coords.String()
 					}
-				case str = <-v.UpdatePlayerAnimationRead:
+				case str = <-v.UpdatePlayerStateRead:
 					v.Animation = str
 					for _, p := range g.Players {
 						if v.ID == p.ID {
 							continue
 						}
-						p.UpdatePlayerAnimationWrite <- str
+						p.UpdatePlayerStateWrite <- str
 					}
 				case str = <-v.UpdatePlayerFacingRead:
 					switch str {

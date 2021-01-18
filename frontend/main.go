@@ -203,9 +203,9 @@ func main() {
 		log.Fatal("Error connecting to the server", err)
 	}
 	err = g.Client.Run(g.Player)
-	if g.Player.Guard{
+	if g.Player.Guard {
 		g.Player.Animations = g.GuardAnimation
-	}else{
+	} else {
 		g.Player.Animations = g.NinjaAnimation
 	}
 	if err != nil {

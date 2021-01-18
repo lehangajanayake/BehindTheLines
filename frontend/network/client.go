@@ -10,10 +10,10 @@ import (
 
 //Client model
 type Client struct {
-	Conn                                                                                       *net.TCPConn
-	Players                                                                                    map[byte]*Player
-	Bullets                                                                                    []Bullet
-        InitialRead, InitialWrite, UpdatePlayerCoordsWrite, UpdatePlayerAnimationWrite, UpdatePlayerFacingWrite chan string //Writeing chans
+	Conn                                                                                                *net.TCPConn
+	Players                                                                                             map[byte]*Player
+	Bullets                                                                                             []Bullet
+	InitialRead, InitialWrite, UpdatePlayerCoordsWrite, UpdatePlayerStateWrite, UpdatePlayerFacingWrite chan string //Writeing chans
 }
 
 //Connect connects to the server and returns the Client
@@ -27,18 +27,18 @@ func Connect(addr string, port string) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		Conn:         conn,
-		Players:      make(map[byte]*Player),
-                InitialRead: make(chan string), InitialWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
+		Conn:        conn,
+		Players:     make(map[byte]*Player),
+		InitialRead: make(chan string), InitialWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerStateWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
 	}, nil
 }
 
 const (
-	newPlayer             = '0'
-	updatePlayerCoords    = '1'
-	updatePlayerAnimation = '2'
-        updatePlayerFacing    = '3'
-        initPlayer = '4'
+	newPlayer          = '0'
+	updatePlayerCoords = '1'
+	updatePlayerState  = '2'
+	updatePlayerFacing = '3'
+	initPlayer         = '4'
 )
 
 //Read reads form the player client and push the data to the rele vant chan of string
@@ -49,11 +49,11 @@ func (c *Client) Read() {
 		if err != nil {
 			log.Println("Error receiving data from the client,", c.Conn.RemoteAddr().String(), ": ", err)
 			return
-                }
+		}
 		switch rune(str[0]) {
-                case initPlayer:
-                        c.InitialRead <- str[1: len(str)-1]
-                case newPlayer:
+		case initPlayer:
+			c.InitialRead <- str[1 : len(str)-1]
+		case newPlayer:
 			log.Println("newPlayer")
 			c.Players[str[1]], err = NewPlayer(str[2 : len(str)-1])
 			if err != nil {
@@ -65,9 +65,9 @@ func (c *Client) Read() {
 			if err != nil {
 				log.Println("Error updating the player coords, ", err, " ", str[2:len(str)-1])
 			}
-		case updatePlayerAnimation:
+		case updatePlayerState:
 			str = str[1 : len(str)-1] //trim the suffix and the prefix
-			err = c.Players[str[0]].UpdatePlayerAnimation(str[1:])
+			err = c.Players[str[0]].UpdatePlayerState(str[1:])
 			if err != nil {
 				log.Println("Error decdong the player animation")
 			}
@@ -93,8 +93,8 @@ func (c *Client) Write() {
 			if err != nil || n != len(str) {
 				log.Println("Error sending data to the server", err)
 			}
-		case str = <-c.UpdatePlayerAnimationWrite:
-			str = string(updatePlayerAnimation) + str + "\n"
+		case str = <-c.UpdatePlayerStateWrite:
+			str = string(updatePlayerState) + str + "\n"
 			n, err := c.Conn.Write([]byte(str))
 			if err != nil || n != len(str) {
 				log.Println("Error sending data to the server", err)
@@ -110,21 +110,21 @@ func (c *Client) Write() {
 }
 
 //Run runs the client forever
-func (c *Client)Run(p *models.Player) ( error){
+func (c *Client) Run(p *models.Player) error {
 	go c.Read()
-        go c.Write()
-        log.Println("Waiting for other players to join")
-        str := <- c.InitialRead
-        result, err := NewPlayer(str)
-        if err != nil {
-                return err
-        }
-        p.Coords.X = result.Coords.X
-        p.Coords.Y = result.Coords.Y
-        p.FacingFront = result.FacingFront
-        p.Guard = result.Guard
-        p.Gun.Bullets = result.BulletsLeft
-        close(c.InitialRead)
-        log.Println(p, str)
-        return nil
+	go c.Write()
+	log.Println("Waiting for other players to join")
+	str := <-c.InitialRead
+	result, err := NewPlayer(str)
+	if err != nil {
+		return err
+	}
+	p.Coords.X = result.Coords.X
+	p.Coords.Y = result.Coords.Y
+	p.FacingFront = result.FacingFront
+	p.Guard = result.Guard
+	p.Gun.Bullets = result.BulletsLeft
+	close(c.InitialRead)
+	log.Println(p, str)
+	return nil
 }

@@ -91,17 +91,17 @@ func (g *Game) Update() error {
 	// case g.Player.IdleAnimation.Name:
 	// 	if !g.Player.IdleAnimation.Animate {
 	// 		g.Player.LastAnimation = g.Player.IdleAnimation.Name
-	// 		g.Client.UpdatePlayerAnimationWrite <- g.Player.IdleAnimation.Name
+	// 		g.Client.UpdatePlayerStateWrite <- g.Player.IdleAnimation.Name
 	// 	}
 	// case g.Player.WalkingAnimation.Name:
 	// 	if !g.Player.WalkingAnimation.Animate {
 	// 		g.Player.LastAnimation = g.Player.WalkingAnimation.Name
-	// 		g.Client.UpdatePlayerAnimationWrite <- g.Player.WalkingAnimation.Name
+	// 		g.Client.UpdatePlayerStateWrite <- g.Player.WalkingAnimation.Name
 	// 	}
 	// case g.Player.ShootingAnimation.Name:
 	// 	if !g.Player.ShootingAnimation.Animate {
 	// 		g.Player.LastAnimation = g.Player.ShootingAnimation.Name
-	// 		g.Client.UpdatePlayerAnimationWrite <- g.Player.ShootingAnimation.Name
+	// 		g.Client.UpdatePlayerStateWrite <- g.Player.ShootingAnimation.Name
 	// 	}
 	// }
 
@@ -109,10 +109,6 @@ func (g *Game) Update() error {
 		g.Player.Shoot()
 		bullet := new(models.Bullet)
 		g.Bullets = append(g.Bullets, bullet.New(g.Player.Coords, g.Player.FacingFront))
-	}
-
-	if g.Player.State != "Walking" && g.Player.State != "Shooting" {
-		g.Player.State = "Idle"
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyQ) {

@@ -25,7 +25,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	g.Player.Op.GeoM.Translate(float64(g.Player.Coords.X), float64(g.Player.Coords.Y))
 	g.Player.Animate(g.Camera.View)
-	
+
 	for _, v := range g.Client.Players {
 		v.CurrentFrame++
 		op := &ebiten.DrawImageOptions{}
