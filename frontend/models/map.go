@@ -28,6 +28,12 @@ func (m *Map) LoadMap(path string) error {
 		return err
 	}
 	render1, err := render.NewRenderer(m.tile)
+	if err != nil {
+		return err
+	}
+	if err != nil {
+		return err
+	}
 	var buff []byte
 	buffer := bytes.NewBuffer(buff)
 	err = render1.RenderLayer(0)
@@ -53,6 +59,9 @@ func (m *Map) LoadMap(path string) error {
 	m.World = ebiten.NewImageFromImage(img)
 	buffer.Reset()
 	render2, err := render.NewRenderer(m.tile)
+	if err != nil {
+		return err
+	}
 	err = render2.RenderLayer(1)
 	if err != nil {
 		return err

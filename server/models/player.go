@@ -17,7 +17,7 @@ type Player struct {
 	Coords                                                                                       *Coordinates
 	Conn                                                                                         *net.TCPConn
 	NewPlayerRead, UpdatePlayerCoordsRead, UpdatePlayerAnimationRead, UpdatePlayerFacingRead     chan string // Readign chans
-	LobbyWrite, NewPlayerWrite, UpdatePlayerCoordsWrite, UpdatePlayerAnimationWrite, UpdatePlayerFacingWrite chan string //Writeing chans
+	InitialWrite, NewPlayerWrite, UpdatePlayerCoordsWrite, UpdatePlayerAnimationWrite, UpdatePlayerFacingWrite chan string //Writeing chans
 	doneRead, doneWrite                                                                          chan bool
 	Errchan                                                                                      chan error
 }
@@ -27,7 +27,7 @@ const (
 	updatePlayerCoords    = '1'
 	updatePlayerAnimation = '2'
 	updatePlayerFacing    = '3'
-	lobby = '4'
+	initial = '4'
 )
 
 //NewPlayer creates a new player
@@ -41,7 +41,7 @@ func NewPlayer(id, x, y, bullets int, guard, facing bool, conn *net.TCPConn) *Pl
 		FacingFront:            facing,
 		Animation: "Idle",
 		UpdatePlayerCoordsRead: make(chan string), UpdatePlayerAnimationRead: make(chan string), UpdatePlayerFacingRead: make(chan string),
-		LobbyWrite: make(chan string), NewPlayerWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
+		InitialWrite: make(chan string), NewPlayerWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
 		Errchan:  make(chan error),
 		doneRead: make(chan bool), doneWrite: make(chan bool),
 	}
@@ -103,11 +103,11 @@ func (p *Player) Write() {
 	for {
 		//p.Conn.SetWriteDeadline(time.Now().Add(time.Second *1))
 		select {
-		case str = <- p.LobbyWrite:
-			n, err := p.Conn.Write([]byte(string(lobby) + str + "\n"))
+		case str = <- p.InitialWrite:
+			n, err := p.Conn.Write([]byte(string(initial) + str + "\n"))
 			if err != nil {
 				p.Errchan <- err
-			} else if n != len(string(lobby)) {
+			} else if n != len(string(initial)) {
 				p.Errchan <- dataLostErr
 			}
 		case str = <-p.NewPlayerWrite:
@@ -149,7 +149,7 @@ func (p *Player) Write() {
 			close(p.UpdatePlayerFacingWrite)
 			close(p.UpdatePlayerCoordsWrite)
 			close(p.UpdatePlayerAnimationWrite)
-			close(p.LobbyWrite)
+			close(p.InitialWrite)
 			return
 		}
 

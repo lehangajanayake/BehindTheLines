@@ -18,6 +18,8 @@ import (
 //Game the game
 type Game struct {
 	Player                    *models.Player
+	GuardAnimation            map[string]*models.Animation
+	NinjaAnimation            map[string]*models.Animation
 	Client                    *network.Client
 	Bullets                   []*models.Bullet
 	BulletImg                 *ebiten.Image
@@ -30,21 +32,50 @@ type Game struct {
 	ScreenWidth, ScreenHeight int
 }
 
-
-
 // Layout lays the screen
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return ebiten.ScreenSizeInFullscreen()
 }
 
 func main() {
-	//runtime.GOMAXPROCS(1)
 	log.SetFlags(log.Ltime | log.Lshortfile)
 	player, _, err := ebitenutil.NewImageFromFile("assets/hero_spritesheet.png")
 	if err != nil {
 		log.Fatalf("Cannot load the assets err : %v", err)
 	}
 	bullet, _, err := ebitenutil.NewImageFromFile("assets/bullet.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	guardWalking, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Guard/spr_Walk_strip.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	guardIdle, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Guard/spr_Idle_strip.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	guardAttack, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Guard/spr_SpinAttack_strip.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	guardDie, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Guard/spr_Death_strip.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	ninjaWalking, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Ninja/spr_ArcherRun_strip_NoBkg.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	ninjaMelee, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Ninja/spr_ArcherMelee_strip_NoBkg.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	ninjaIdle, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Ninja/spr_ArcherIdle_strip_NoBkg.png")
+	if err != nil {
+		log.Fatalf("Cannot load the assets err : %v", err)
+	}
+	ninjaDie, _, err := ebitenutil.NewImageFromFile("assets/Dungeon/sprtitesheets/Ninja/spr_ArcherDeath_strip_NoBkg.png")
 	if err != nil {
 		log.Fatalf("Cannot load the assets err : %v", err)
 	}
@@ -61,37 +92,86 @@ func main() {
 				X: w / 2,
 				Y: h / 2,
 			},
-			WalkingAnimation: models.Animation{
-				Name:        "Walking",
-				StartX:      0,
-				StartY:      100,
-				FrameNum:    6,
-				FrameWidth:  80,
-				FrameHeight: 80,
-				Animate:     false,
-			},
-			IdleAnimation: models.Animation{
-				Name:        "Idle",
-				StartX:      0,
-				StartY:      0,
-				FrameNum:    1,
-				FrameHeight: 80,
-				FrameWidth:  80,
-				Animate:     false,
-			},
-			ShootingAnimation: models.Animation{
-				Name:        "Shooting",
-				StartX:      0,
-				StartY:      0,
-				FrameNum:    8,
-				FrameHeight: 80,
-				FrameWidth:  80,
-				Animate:     false,
-			},
 			Gun: models.Gun{
 				Bullets: 60,
 			},
 			FacingFront: true,
+		},
+		GuardAnimation: map[string]*models.Animation{
+			"Walking": {
+				Img:          guardWalking,
+				StartX:       8,
+				StartY:       0,
+				FrameNum:     8,
+				FrameHeight:  94,
+				FrameWidth:   170,
+				CurrentFrame: 0,
+			},
+			"Attacking": {
+				Img:          guardAttack,
+				StartX:       8,
+				StartY:       0,
+				FrameNum:     30,
+				FrameHeight:  94,
+				FrameWidth:   170,
+				CurrentFrame: 0,
+			},
+			"Idle": {
+				Img:          guardIdle,
+				StartX:       8,
+				StartY:       0,
+				FrameNum:     16,
+				FrameHeight:  94,
+				FrameWidth:   170,
+				CurrentFrame: 0,
+			},
+			"Die": {
+				Img:          guardDie,
+				StartX:       8,
+				StartY:       0,
+				FrameNum:     8,
+				FrameHeight:  94,
+				FrameWidth:   170,
+				CurrentFrame: 0,
+			},
+		},
+		NinjaAnimation: map[string]*models.Animation{
+			"Walking": {
+				Img:          ninjaWalking,
+				StartX:       0,
+				StartY:       0,
+				FrameNum:     8,
+				FrameHeight:  128,
+				FrameWidth:   128,
+				CurrentFrame: 0,
+			},
+			"Idle": {
+				Img:          ninjaIdle,
+				StartX:       0,
+				StartY:       0,
+				FrameNum:     8,
+				FrameHeight:  128,
+				FrameWidth:   128,
+				CurrentFrame: 0,
+			},
+			"Attacking": {
+				Img:          ninjaMelee,
+				StartX:       0,
+				StartY:       0,
+				FrameNum:     8,
+				FrameHeight:  128,
+				FrameWidth:   128,
+				CurrentFrame: 0,
+			},
+			"Death": {
+				Img:          ninjaDie,
+				StartX:       0,
+				StartY:       0,
+				FrameNum:     24,
+				FrameHeight:  128,
+				FrameWidth:   128,
+				CurrentFrame: 0,
+			},
 		},
 
 		Frames:    0,
@@ -123,6 +203,11 @@ func main() {
 		log.Fatal("Error connecting to the server", err)
 	}
 	err = g.Client.Run(g.Player)
+	if g.Player.Guard{
+		g.Player.Animations = g.GuardAnimation
+	}else{
+		g.Player.Animations = g.NinjaAnimation
+	}
 	if err != nil {
 		log.Fatal("Error loadign the player from the server, ", err)
 	}

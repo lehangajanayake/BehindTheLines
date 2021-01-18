@@ -1,5 +1,7 @@
 package models
 
+import "github.com/hajimehoshi/ebiten/v2"
+
 //Coordinates contains the x and y value
 type Coordinates struct {
 	X, Y int
@@ -7,7 +9,7 @@ type Coordinates struct {
 
 //Animation model for animation
 type Animation struct {
-	Name                                                            string
+	Img *ebiten.Image
 	Animate                                                         bool
 	FrameNum, CurrentFrame, FrameHeight, FrameWidth, StartX, StartY int
 }

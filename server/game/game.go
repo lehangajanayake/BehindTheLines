@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/lehangajanayake/BehindTheLine/Server/models"
 )
@@ -12,7 +13,6 @@ import (
 type Game struct {
 	PlayerNum int
 	Players   []*models.Player
-	started   chan bool
 }
 
 var PlayerArray [2]struct {
@@ -29,7 +29,7 @@ var PlayerArray [2]struct {
 		Bullets int
 		Guard   bool
 		Facing  bool
-	}{1, 100, 200, 60, true, true},
+	}{0, 100, 200, 60, true, true},
 	struct {
 		ID      int
 		X       int
@@ -37,14 +37,13 @@ var PlayerArray [2]struct {
 		Bullets int
 		Guard   bool
 		Facing  bool
-	}{2, 200, 100, 60, false, false},
+	}{1, 200, 100, 60, false, false},
 }
 
 func NewGame(pNum int) *Game {
 	return &Game{
 		PlayerNum: pNum,
 		Players:   make([]*models.Player, 0),
-		started:   make(chan bool),
 	}
 
 }
@@ -61,24 +60,27 @@ func (g *Game) AddPlayer(conn *net.TCPConn) bool {
 	log.Println(g.Players)
 	go p.Read()
 	go p.Write()
-	go func() {
-		<- g.started
-		p.LobbyWrite <- p.String()
-		g.started <- true
-	}()
+	// go func() {
+	// 	for {
+	// 		err := <-p.Errchan
+	// 		log.Println("Error in Client, ", p.Conn.RemoteAddr().String(), ":", err)
+	// 		//g.Players = append(g.Players[:pl.ID], g.Players[pl.ID + 1:]...)
+	// 	}
+	// }()
+	m := make(map[string]string, 2)
+	println(m)
 	return len(g.Players) == g.PlayerNum
 
 }
 
 //Run starts the game and runs the game returns an error if the game fails to run
 func (g *Game) Run() {
-	g.started <- true
-	g.started <- true
-	<-g.started
-	<-g.started
+	tick := time.NewTicker(time.Millisecond*16)
+	defer tick.Stop()
 	var wg sync.WaitGroup
 	done := make(chan bool)
 	for _, p := range g.Players {
+		p.InitialWrite <- p.String()
 		for _, otherP := range g.Players {
 			if p.ID == otherP.ID {
 				continue
@@ -87,7 +89,9 @@ func (g *Game) Run() {
 		}
 	}
 	for {
-
+		if len(g.Players) >= 1 {
+			return 
+		}
 		for _, v := range g.Players {
 			wg.Add(1)
 			go func(v *models.Player, wg *sync.WaitGroup) {
@@ -133,7 +137,7 @@ func (g *Game) Run() {
 					log.Println("Error getting data: ", err)
 					done <- true
 					return
-				default:
+				case <- tick.C:
 					return
 				}
 			}(v, &wg)

@@ -15,16 +15,15 @@ import (
 //Update updates  the game every tick. The game logic runs here
 func (g *Game) Update() error {
 	g.Camera.Zoom = 1
-	g.Player.IdleAnimation.Animate, g.Player.WalkingAnimation.Animate, g.Player.ShootingAnimation.Animate = false, false, false
+	g.Player.State = "Idle"
 	g.Camera.Move(models.Coordinates{X: g.ScreenWidth / 2, Y: g.ScreenHeight / 2})
 
-	if g.Player.IsShooting() {
-		g.Player.Shoot()
+	if g.Player.State == "Attacking" {
 		return nil
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		g.Player.Walk("F")
+		g.Player.Walk("F") //Wll set the state automatically
 	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
 		g.Player.Walk("B")
 	}
@@ -88,23 +87,23 @@ func (g *Game) Update() error {
 
 	}
 
-	switch g.Player.LastAnimation {
-	case g.Player.IdleAnimation.Name:
-		if !g.Player.IdleAnimation.Animate {
-			g.Player.LastAnimation = g.Player.IdleAnimation.Name
-			g.Client.UpdatePlayerAnimationWrite <- g.Player.IdleAnimation.Name
-		}
-	case g.Player.WalkingAnimation.Name:
-		if !g.Player.WalkingAnimation.Animate {
-			g.Player.LastAnimation = g.Player.WalkingAnimation.Name
-			g.Client.UpdatePlayerAnimationWrite <- g.Player.WalkingAnimation.Name
-		}
-	case g.Player.ShootingAnimation.Name:
-		if !g.Player.ShootingAnimation.Animate {
-			g.Player.LastAnimation = g.Player.ShootingAnimation.Name
-			g.Client.UpdatePlayerAnimationWrite <- g.Player.ShootingAnimation.Name
-		}
-	}
+	// switch g.Player.LastAnimation {
+	// case g.Player.IdleAnimation.Name:
+	// 	if !g.Player.IdleAnimation.Animate {
+	// 		g.Player.LastAnimation = g.Player.IdleAnimation.Name
+	// 		g.Client.UpdatePlayerAnimationWrite <- g.Player.IdleAnimation.Name
+	// 	}
+	// case g.Player.WalkingAnimation.Name:
+	// 	if !g.Player.WalkingAnimation.Animate {
+	// 		g.Player.LastAnimation = g.Player.WalkingAnimation.Name
+	// 		g.Client.UpdatePlayerAnimationWrite <- g.Player.WalkingAnimation.Name
+	// 	}
+	// case g.Player.ShootingAnimation.Name:
+	// 	if !g.Player.ShootingAnimation.Animate {
+	// 		g.Player.LastAnimation = g.Player.ShootingAnimation.Name
+	// 		g.Client.UpdatePlayerAnimationWrite <- g.Player.ShootingAnimation.Name
+	// 	}
+	// }
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		g.Player.Shoot()
@@ -112,8 +111,8 @@ func (g *Game) Update() error {
 		g.Bullets = append(g.Bullets, bullet.New(g.Player.Coords, g.Player.FacingFront))
 	}
 
-	if g.Player.IsIdle() {
-		g.Player.Idle()
+	if g.Player.State != "Walking" && g.Player.State != "Shooting" {
+		g.Player.State = "Idle"
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyQ) {

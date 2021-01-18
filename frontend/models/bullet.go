@@ -35,7 +35,7 @@ func (b *Bullet) Move() {
 	}
 }
 
-//IsHit returns tru is it coliided woth something
+//IsHit returns tru is it collided with something
 func (b *Bullet) IsHit() bool {
 	return b.Hit
 }
@@ -45,13 +45,8 @@ func (b *Bullet) Render(screen, bullet *ebiten.Image) {
 	screen.DrawImage(bullet, b.Op)
 }
 
-//Collides telles whether the player is goona collide with te  object
+//Collides telles whether the player is gonna collide with te  object
 func (b *Bullet) Collides(object image.Rectangle) bool {
 	bullet := image.Rect(b.Coords.X, b.Coords.Y, b.Coords.X+4, b.Coords.Y+2)
-	if bullet.Overlaps(object) {
-
-		//go log.Println(b.IsHit())
-		return true
-	}
-	return false
+	return bullet.Overlaps(object)
 }

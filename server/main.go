@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error startign the server: ", err)
 	}
-	g := game.NewGame(2)
+	g := game.NewGame(1)
 	for {
 		conn, err := listener.AcceptTCP()
 		log.Println("Incoming connection, ", conn.RemoteAddr().String())
@@ -24,7 +24,7 @@ func main() {
 		if g.AddPlayer(conn) {
 			log.Println("Starting a game")
 			go g.Run()
-			g = game.NewGame(2)
+			g = game.NewGame(1)
 		}
 	}
 
