@@ -12,13 +12,14 @@ import (
 //Game model game
 type Game struct {
 	PlayerNum int
-	Players   []*models.Player
+	//Players   []*models.Player
+	Players   map[byte]*models.Player
 }
 
-var PlayerArray [2]struct {
+var PlayerArray [3]struct {
 	ID, X, Y, Bullets int
 	Guard, Facing     bool
-} = [2]struct {
+} = [3]struct {
 	ID, X, Y, Bullets int
 	Guard, Facing     bool
 }{
@@ -38,12 +39,20 @@ var PlayerArray [2]struct {
 		Guard   bool
 		Facing  bool
 	}{1, 200, 100, 60, false, false},
+	struct {
+		ID      int
+		X       int
+		Y       int
+		Bullets int
+		Guard   bool
+		Facing  bool
+	}{2, 100, 200, 60, false, true},
 }
 
 func NewGame(pNum int) *Game {
 	return &Game{
 		PlayerNum: pNum,
-		Players:   make([]*models.Player, 0),
+		Players:   make(map[byte]*models.Player, pNum),
 	}
 
 }
@@ -55,11 +64,10 @@ func (g *Game) AddPlayer(conn *net.TCPConn) bool {
 		return true
 	}
 	pl := PlayerArray[len(g.Players)]
-	p := models.NewPlayer(pl.ID, pl.X, pl.Y, pl.Bullets, pl.Guard, pl.Facing, conn)
-	g.Players = append(g.Players, p)
+	g.Players[byte(pl.ID)] = models.NewPlayer(pl.ID, pl.X, pl.Y, pl.Bullets, pl.Guard, pl.Facing, conn)
 	log.Println(g.Players)
-	go p.Read()
-	go p.Write()
+	go g.Players[byte(pl.ID)].Read()
+	go g.Players[byte(pl.ID)].Write()
 	// go func() {
 	// 	for {
 	// 		err := <-p.Errchan
@@ -67,8 +75,6 @@ func (g *Game) AddPlayer(conn *net.TCPConn) bool {
 	// 		//g.Players = append(g.Players[:pl.ID], g.Players[pl.ID + 1:]...)
 	// 	}
 	// }()
-	m := make(map[string]string, 2)
-	println(m)
 	return len(g.Players) == g.PlayerNum
 
 }
@@ -79,27 +85,29 @@ func (g *Game) Run() {
 	defer tick.Stop()
 	var wg sync.WaitGroup
 	done := make(chan bool)
-	for _, p := range g.Players {
+	for k, p := range g.Players {
 		p.InitialWrite <- p.String()
-		for _, otherP := range g.Players {
-			if p.ID == otherP.ID {
+		for otherK, otherP := range g.Players {
+			if k == otherK {
 				continue
 			}
+			log.Println("sent player info to", otherP.ID)
 			otherP.NewPlayerWrite <- p.String()
 		}
 	}
 	for {
-		if len(g.Players) >= 1 {
-			return 
-		}
-		for _, v := range g.Players {
+		// if len(g.Players) >= 1 {
+		// 	log.Println("Not Enough Players to play")
+		// 	return 
+		// }
+		for k, v := range g.Players {
 			wg.Add(1)
 			go func(v *models.Player, wg *sync.WaitGroup) {
 				defer wg.Done()
 				var str string
 				var err error
 				select {
-				case str = <-v.UpdatePlayerCoordsRead:
+				case str = <- v.UpdatePlayerCoordsRead:
 					err = v.Coords.Update(str)
 					if err != nil {
 						log.Println("Error decoding the Player Coords: ", err)
@@ -135,9 +143,13 @@ func (g *Game) Run() {
 
 				case err = <-v.Errchan:
 					log.Println("Error getting data: ", err)
+					delete(g.Players, k)
 					done <- true
 					return
-				case <- tick.C:
+				// case <- tick.C:
+				// 	log.Println("ticked")
+				// 	return
+				default:
 					return
 				}
 			}(v, &wg)

@@ -16,8 +16,8 @@ type Player struct {
 	Animation                                                                                    string
 	Coords                                                                                       *Coordinates
 	Conn                                                                                         *net.TCPConn
-	NewPlayerRead, UpdatePlayerCoordsRead, UpdatePlayerAnimationRead, UpdatePlayerFacingRead     chan string // Readign chans
-	InitialWrite, NewPlayerWrite, UpdatePlayerCoordsWrite, UpdatePlayerAnimationWrite, UpdatePlayerFacingWrite chan string //Writeing chans
+	NewPlayerRead, UpdatePlayerCoordsRead, UpdatePlayerStateRead, UpdatePlayerFacingRead     chan string // Readign chans
+	InitialWrite, NewPlayerWrite, UpdatePlayerCoordsWrite, UpdatePlayerStateWrite, UpdatePlayerFacingWrite chan string //Writeing chans
 	doneRead, doneWrite                                                                          chan bool
 	Errchan                                                                                      chan error
 }
@@ -25,7 +25,7 @@ type Player struct {
 const (
 	newPlayer             = '0'
 	updatePlayerCoords    = '1'
-	updatePlayerAnimation = '2'
+	updatePlayerState = '2'
 	updatePlayerFacing    = '3'
 	initial = '4'
 )
@@ -40,8 +40,8 @@ func NewPlayer(id, x, y, bullets int, guard, facing bool, conn *net.TCPConn) *Pl
 		Guard:                  guard,
 		FacingFront:            facing,
 		Animation: "Idle",
-		UpdatePlayerCoordsRead: make(chan string), UpdatePlayerAnimationRead: make(chan string), UpdatePlayerFacingRead: make(chan string),
-		InitialWrite: make(chan string), NewPlayerWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerAnimationWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
+		UpdatePlayerCoordsRead: make(chan string), UpdatePlayerStateRead: make(chan string), UpdatePlayerFacingRead: make(chan string),
+		InitialWrite: make(chan string), NewPlayerWrite: make(chan string), UpdatePlayerCoordsWrite: make(chan string), UpdatePlayerStateWrite: make(chan string), UpdatePlayerFacingWrite: make(chan string),
 		Errchan:  make(chan error),
 		doneRead: make(chan bool), doneWrite: make(chan bool),
 	}
@@ -72,14 +72,15 @@ func (p *Player) Read() {
 		}
 		switch rune(str[0]) {
 		case newPlayer:
+			log.Println("Sending a new player")
 			str = str[1 : len(str)-1] //trim the suffix and the prefix
 			p.NewPlayerRead <- str
 		case updatePlayerCoords:
 			str = str[1 : len(str)-1] //trim the suffix and the prefix
 			p.UpdatePlayerCoordsRead <- str
-		case updatePlayerAnimation:
+		case updatePlayerState:
 			str = str[1 : len(str)-1] //trim the suffix and the prefix
-			p.UpdatePlayerAnimationRead <- str
+			p.UpdatePlayerStateRead <- str
 		case updatePlayerFacing:
 			str = str[1 : len(str)-1] //trim the suffix and the prefix
 			p.UpdatePlayerFacingRead <- str
@@ -89,7 +90,7 @@ func (p *Player) Read() {
 			close(p.NewPlayerRead)
 			close(p.UpdatePlayerFacingRead)
 			close(p.UpdatePlayerCoordsRead)
-			close(p.UpdatePlayerAnimationRead)
+			close(p.UpdatePlayerStateRead)
 			return
 		default:
 			continue
@@ -104,14 +105,14 @@ func (p *Player) Write() {
 		//p.Conn.SetWriteDeadline(time.Now().Add(time.Second *1))
 		select {
 		case str = <- p.InitialWrite:
-			n, err := p.Conn.Write([]byte(string(initial) + str + "\n"))
-			if err != nil {
+			data := string(initial) + str + "\n"
+			n, err := p.Conn.Write([]byte(data))
+			if err != nil {	
 				p.Errchan <- err
-			} else if n != len(string(initial)) {
+			} else if n != len(data) {
 				p.Errchan <- dataLostErr
 			}
 		case str = <-p.NewPlayerWrite:
-			println("new player sending to the other player")
 			data := string(newPlayer) + strconv.Itoa(p.ID) + str + "\n"
 			n, err := p.Conn.Write([]byte(data))
 			if err != nil {
@@ -128,8 +129,8 @@ func (p *Player) Write() {
 			} else if n != len(data) {
 				p.Errchan <- dataLostErr
 			}
-		case str = <-p.UpdatePlayerAnimationWrite:
-			data := string(updatePlayerAnimation) + strconv.Itoa(p.ID) + str + "\n"
+		case str = <-p.UpdatePlayerStateWrite:
+			data := string(updatePlayerState) + strconv.Itoa(p.ID) + str + "\n"
 			n, err := p.Conn.Write([]byte(data))
 			if err != nil {
 				p.Errchan <- err
@@ -148,7 +149,7 @@ func (p *Player) Write() {
 			close(p.NewPlayerWrite)
 			close(p.UpdatePlayerFacingWrite)
 			close(p.UpdatePlayerCoordsWrite)
-			close(p.UpdatePlayerAnimationWrite)
+			close(p.UpdatePlayerStateWrite)
 			close(p.InitialWrite)
 			return
 		}

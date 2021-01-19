@@ -14,7 +14,7 @@ type Player struct {
 	BulletsLeft        int
 	CurrentFrame       int
 	FacingFront, Guard bool
-	State              string
+	State          string
 	Coords             *Coordinates
 	Conn               *net.TCPConn
 }

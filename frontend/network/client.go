@@ -38,7 +38,7 @@ const (
 	updatePlayerCoords = '1'
 	updatePlayerState  = '2'
 	updatePlayerFacing = '3'
-	initPlayer         = '4'
+	initial         = '4'
 )
 
 //Read reads form the player client and push the data to the rele vant chan of string
@@ -51,7 +51,7 @@ func (c *Client) Read() {
 			return
 		}
 		switch rune(str[0]) {
-		case initPlayer:
+		case initial:
 			c.InitialRead <- str[1 : len(str)-1]
 		case newPlayer:
 			log.Println("newPlayer")

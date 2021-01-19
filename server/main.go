@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error startign the server: ", err)
 	}
-	g := game.NewGame(1)
+	g := game.NewGame(3)
 	for {
 		conn, err := listener.AcceptTCP()
 		log.Println("Incoming connection, ", conn.RemoteAddr().String())
@@ -24,7 +24,7 @@ func main() {
 		if g.AddPlayer(conn) {
 			log.Println("Starting a game")
 			go g.Run()
-			g = game.NewGame(1)
+			g = game.NewGame(3)
 		}
 	}
 
@@ -37,15 +37,4 @@ func startServer(addr string, port string) (*net.TCPListener, error) {
 	}
 	return net.ListenTCP("tcp", TCPaddr)
 
-}
-
-func listener(server *net.UDPConn, connchan chan *net.UDPAddr) {
-	for {
-		buff := make([]byte, 1)
-		_, remote, err := server.ReadFromUDP(buff)
-		if err != nil {
-			log.Fatal("Error Reading UDP Packets: ", err)
-		}
-		connchan <- remote
-	}
 }
